@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { setPatientData, addPatientRecord, setPredictionResult } from "../features/patientSlice";
+import { setPatientData, addPatientRecord, setPredictionResult, savePatientRecord } from "../features/patientSlice";
 import FormSection from "./FormSection";
 import TextInput from "./inputs/TextInput";
 import SelectInput from "./inputs/SelectInput";
@@ -50,6 +50,9 @@ const PatientForm = ({ onClose }) => {
         };
 
         dispatch(setPatientData(newPatient)); // Store current patient details
+
+        dispatch(savePatientRecord(newPatient));
+
         dispatch(addPatientRecord(newPatient)); // Add to records list
         console.log("New Record Added:", newPatient);
         alert("Patient record added successfully!");

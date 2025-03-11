@@ -1,5 +1,5 @@
-// components/HomePage.js
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Sidebar from '../components/Sidebar';
@@ -7,13 +7,9 @@ import Dashboard from '../components/Dashboard';
 import PatientForm from '../components/PatientForm';
 
 const HomePage = () => {
+  
     const [isFormVisible, setIsFormVisible] = useState(false);
-    const [hospitalInfo] = useState({
-      name: "Memorial Medical Center",
-      id: "MMC-12345",
-      department: "Internal Medicine",
-      physician: "Dr. Sarah Johnson"
-    });
+    const { hospitalInfo } = useSelector(state => state.auth);
   
     // Handler to toggle patient entry form visibility
     const handleGenerateEntry = () => {

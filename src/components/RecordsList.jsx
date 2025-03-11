@@ -1,24 +1,35 @@
 // components/RecordsList.js
 import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { removePatientRecord } from '../features/patientSlice';
+import { useDispatch } from 'react-redux';
+import { removePatientRecord, fetchPatientRecords, deletePatientRecord } from '../features/patientSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const RecordsList = () => {
   const dispatch = useDispatch();
-  // This would come from your Redux store or an API call
-  const patientRecords = useSelector(state => state.patient.patientRecords) || [];
-  
+  const [patientRecords, setPatientRecords] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [filterRisk, setFilterRisk] = useState('all'); // 'all', 'high', 'medium', 'low'
   const [sortBy, setSortBy] = useState('name'); // 'name', 'risk', 'date'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
   
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const records = await dispatch(fetchPatientRecords()).unwrap(); // Fetch records
+        setPatientRecords(records); // Update local state
+      } catch (error) {
+        console.error('Error fetching patient records:', error);
+      }
+    };
+
+    fetchData();
+  }, [dispatch]);
+
   // Filter by search term and risk level
   const filteredRecords = patientRecords.filter((record) => {
     const matchesSearch = (record.firstName + " " + record.lastName).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.patientId.toLowerCase().includes(searchTerm.toLowerCase());
+      (record.patientId && record.patientId.toLowerCase().includes(searchTerm.toLowerCase()));
     
     if (filterRisk === 'all') return matchesSearch;
     
@@ -33,8 +44,8 @@ const RecordsList = () => {
   // Sort records
   const sortedRecords = [...filteredRecords].sort((a, b) => {
     if (sortBy === 'name') {
-      const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
-      const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+      const nameA = `${a.firstName || ''} ${a.lastName || ''}`.toLowerCase();
+      const nameB = `${b.firstName || ''} ${b.lastName || ''}`.toLowerCase();
       return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
     } else if (sortBy === 'risk') {
       const riskA = parseInt(a.readmissionRisk) || 0;
@@ -52,9 +63,14 @@ const RecordsList = () => {
     setShowDeleteConfirm(recordId);
   };
 
-  const confirmDelete = (recordId) => {
-    dispatch(removePatientRecord(recordId));
-    setShowDeleteConfirm(null);
+  const confirmDelete = async (recordId) => {
+    try {
+      // Use the Redux thunk for deletion instead of the local action
+      await dispatch(deletePatientRecord(recordId)).unwrap();
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting record:', error);
+    }
   };
 
   const cancelDelete = () => {
@@ -192,117 +208,115 @@ const RecordsList = () => {
       <AnimatePresence>
         {sortedRecords.length > 0 ? (
           <div className="space-y-3">
-            {sortedRecords.map((record, index) =>
-              record && record.id ? (
-                <motion.div 
-                  key={record.id || index} 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="backdrop-blur-lg bg-white/5 border border-white/10 rounded-xl p-4 relative hover:bg-white/10 transition-colors"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-700 to-purple-800 flex items-center justify-center text-white font-bold mr-3">
-                        {(record.firstName?.[0] || '') + (record.lastName?.[0] || '')}
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-white">{record.firstName || "Unknown"} {record.lastName || ""}</h3>
-                        <p className="text-xs text-gray-400">ID: {record.patientId || "N/A"}</p>
-                      </div>
+            {sortedRecords.map((record, index) => (
+              <motion.div 
+                key={record._id || index} 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                className="backdrop-blur-lg bg-white/5 border border-white/10 rounded-xl p-4 relative hover:bg-white/10 transition-colors"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-700 to-purple-800 flex items-center justify-center text-white font-bold mr-3">
+                      {(record.firstName?.[0] || '') + (record.lastName?.[0] || '')}
                     </div>
-                    <div className="flex items-center">
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium mr-3 ${getRiskColorClass(record.readmissionRisk)}`}>
-                        {record.readmissionRisk || "N/A"}%
-                      </div>
-                      <motion.button 
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => handleDeleteRecord(record.id)}
-                        className="text-gray-400 hover:text-red-400 transition-colors focus:outline-none p-1"
-                        aria-label="Delete record"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </motion.button>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center">
                     <div>
-                      <span className="text-xs font-medium text-gray-500">Diagnosis</span>
-                      <p className="text-sm text-gray-300">{record.diagnosis || record.primaryDiagnosis || "Not Provided"}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-2 bg-blue-900/30 rounded-lg text-blue-400 hover:bg-blue-900/50 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-2 bg-purple-900/30 rounded-lg text-purple-400 hover:bg-purple-900/50 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                      </motion.button>
+                      <h3 className="font-medium text-white">{record.firstName || "Unknown"} {record.lastName || ""}</h3>
+                      <p className="text-xs text-gray-400">ID: {record.patientId || "N/A"}</p>
                     </div>
                   </div>
-                  
-                  <div className="absolute bottom-4 right-4 text-xs text-gray-500">
-                    {record.date || "N/A"}
+                  <div className="flex items-center">
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium mr-3 ${getRiskColorClass(record.readmissionRisk)}`}>
+                      {record.readmissionRisk || "N/A"}%
+                    </div>
+                    <motion.button 
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handleDeleteRecord(record._id)}
+                      className="text-gray-400 hover:text-red-400 transition-colors focus:outline-none p-1"
+                      aria-label="Delete record"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </motion.button>
                   </div>
-                  
-                  {/* Delete confirmation overlay */}
-                  <AnimatePresence>
-                    {showDeleteConfirm === record.id && (
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 backdrop-blur-md bg-gray-900/90 rounded-xl flex flex-col items-center justify-center p-4 z-10"
+                </div>
+                
+                <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center">
+                  <div>
+                    <span className="text-xs font-medium text-gray-500">Diagnosis</span>
+                    <p className="text-sm text-gray-300">{record.diagnosis || "Not Provided"}</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="p-2 bg-blue-900/30 rounded-lg text-blue-400 hover:bg-blue-900/50 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="p-2 bg-purple-900/30 rounded-lg text-purple-400 hover:bg-purple-900/50 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </motion.button>
+                  </div>
+                </div>
+                
+                <div className="absolute bottom-4 right-4 text-xs text-gray-500">
+                  {new Date(record.date || "").toLocaleDateString() || "N/A"}
+                </div>
+                
+                {/* Delete confirmation overlay */}
+                <AnimatePresence>
+                  {showDeleteConfirm === record._id && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 backdrop-blur-md bg-gray-900/90 rounded-xl flex flex-col items-center justify-center p-4 z-10"
+                    >
+                      <motion.div
+                        initial={{ scale: 0.9 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0.9 }}
+                        className="bg-gray-800 p-6 rounded-xl border border-gray-700 w-full max-w-sm"
                       >
-                        <motion.div
-                          initial={{ scale: 0.9 }}
-                          animate={{ scale: 1 }}
-                          exit={{ scale: 0.9 }}
-                          className="bg-gray-800 p-6 rounded-xl border border-gray-700 w-full max-w-sm"
-                        >
-                          <h3 className="text-lg font-bold text-white mb-2">Confirm Deletion</h3>
-                          <p className="text-gray-300 mb-4">Are you sure you want to delete this patient record? This action cannot be undone.</p>
-                          <div className="flex space-x-3">
-                            <motion.button 
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => confirmDelete(record.id)}
-                              className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-500 hover:to-red-600 transition-colors"
-                            >
-                              Delete
-                            </motion.button>
-                            <motion.button 
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={cancelDelete}
-                              className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                            >
-                              Cancel
-                            </motion.button>
-                          </div>
-                        </motion.div>
+                        <h3 className="text-lg font-bold text-white mb-2">Confirm Deletion</h3>
+                        <p className="text-gray-300 mb-4">Are you sure you want to delete this patient record? This action cannot be undone.</p>
+                        <div className="flex space-x-3">
+                          <motion.button 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => confirmDelete(record._id)}
+                            className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-500 hover:to-red-600 transition-colors"
+                          >
+                            Delete
+                          </motion.button>
+                          <motion.button 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={cancelDelete}
+                            className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                          >
+                            Cancel
+                          </motion.button>
+                        </div>
                       </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              ) : null
-            )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
           </div>
         ) : (
           <motion.div 
