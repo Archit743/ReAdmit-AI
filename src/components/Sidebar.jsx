@@ -21,7 +21,7 @@ const Sidebar = ({ hospitalInfo }) => {
   };
 
   return (
-    <aside className="my-5 w-100 h-auto bg-gradient-to-br from-gray-900 to-gray-950 border-r border-white/10 flex flex-col backdrop-blur-lg shadow-xl rounded-r-3xl">
+    <aside className="w-100 h-full bg-transparent border-r border-white/10 flex flex-col backdrop-blur-lg shadow-xl pt-3 rounded-2xl mt-6">
       {/* Logo area */}
       <div className="p-5 border-b border-white/10">
         <div className="flex items-center space-x-3">
@@ -31,14 +31,20 @@ const Sidebar = ({ hospitalInfo }) => {
             </svg>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white">MediTrack(?)</h1>
+            <h1 className="text-lg font-bold text-white">MediTrack</h1>
             <p className="text-xs text-gray-400">Healthcare Platform</p>
           </div>
         </div>
       </div>
 
+      {/* Decorative elements to match homepage */}
+      <div className="relative overflow-hidden">
+        <div className="absolute -top-20 -left-20 w-40 h-40 bg-blue-600 rounded-full filter blur-3xl opacity-10"></div>
+        <div className="absolute bottom-40 -right-20 w-40 h-40 bg-purple-600 rounded-full filter blur-3xl opacity-10"></div>
+      </div>
+
       {/* Tabs */}
-      <div className="flex p-2 my-3 mx-4 bg-gray-800/50 rounded-xl border border-white/5 backdrop-blur-md">
+      <div className="flex p-2 my-4 mx-4 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md">
         <motion.button
           variants={tabVariants}
           initial="inactive"
@@ -47,7 +53,7 @@ const Sidebar = ({ hospitalInfo }) => {
           whileTap={{ scale: 0.98 }}
           className={`flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all ${
             activeTab === 'profile' 
-              ? 'text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg shadow-blue-800/30' 
+              ? 'text-white bg-gradient-to-r from-blue-600 to-indigo-700 shadow-lg shadow-blue-800/30' 
               : 'text-gray-300 hover:bg-white/5'
           }`}
           onClick={() => setActiveTab('profile')}
@@ -67,7 +73,7 @@ const Sidebar = ({ hospitalInfo }) => {
           whileTap={{ scale: 0.98 }}
           className={`flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all ${
             activeTab === 'records' 
-              ? 'text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg shadow-blue-800/30' 
+              ? 'text-white bg-gradient-to-r from-blue-600 to-indigo-700 shadow-lg shadow-blue-800/30' 
               : 'text-gray-300 hover:bg-white/5'
           }`}
           onClick={() => setActiveTab('records')}
@@ -82,7 +88,7 @@ const Sidebar = ({ hospitalInfo }) => {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 relative z-10">
         <motion.div
           key={activeTab}
           initial="hidden"
@@ -91,9 +97,13 @@ const Sidebar = ({ hospitalInfo }) => {
           className="h-full"
         >
           {activeTab === 'profile' ? (
-            <HospitalProfile hospitalInfo={hospitalInfo} />
+            <div className="bg-white/8 border border-white/10 rounded-xl shadow-lg p-4">
+              <HospitalProfile hospitalInfo={hospitalInfo} />
+            </div>
           ) : (
-            <RecordsList />
+            <div className="bg-white/2 border border-white/10 rounded-xl shadow-lg p-4">
+              <RecordsList />
+            </div>
           )}
         </motion.div>
       </div>

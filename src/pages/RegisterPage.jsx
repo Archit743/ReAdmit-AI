@@ -93,7 +93,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const renderStepIndicator = () => {
     return (
-      <div className="flex items-center justify-center space-x-2 mb-8">
+      <div className="flex items-center justify-center space-x-2 mb-4">
         {[1, 2, 3].map((step) => (
           <React.Fragment key={step}>
             <motion.div 
@@ -131,7 +131,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-950 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-950 flex items-center justify-center p-4">
         <style>{autofillStyle}</style>
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-600 rounded-full filter blur-3xl opacity-20"></div>
@@ -143,7 +143,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="backdrop-blur-lg bg-white/8 border border-white/10 rounded-2xl shadow-2xl w-full max-w-150 p-8 relative z-10"
+        className="backdrop-blur-lg bg-white/8 border border-white/10 rounded-2xl shadow-2xl w-full max-w-150 p-4 sm:p-6 relative z-10"
       >
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -192,7 +192,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
               exit="exit"
               className="space-y-5"
             >
-              <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4">
+              <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 mb-3">
                 <h3 className="text-lg font-medium text-white mb-2">Hospital Information</h3>
                 <p className="text-gray-400 text-sm mb-4">Let's start with your basic details</p>
                 
@@ -212,7 +212,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
                     value={hospitalData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
+                    className="w-full px-3 py-2 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
                     placeholder="Enter hospital name"
                   />
                 </motion.div>
@@ -233,7 +233,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
                     value={hospitalData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
+                    className="w-full px-3 py-2 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
                     placeholder="Enter email address"
                   />
                 </motion.div>
@@ -250,7 +250,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
               exit="exit"
               className="space-y-5"
             >
-              <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4">
+              <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 mb-3">
                 <h3 className="text-lg font-medium text-white mb-2">Department Details</h3>
                 <p className="text-gray-400 text-sm mb-4">Tell us about your specialization</p>
                 
@@ -270,7 +270,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
                     value={hospitalData.department}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
+                    className="w-full px-3 py-2 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
                     placeholder="E.g. Cardiology"
                   />
                 </motion.div>
@@ -291,7 +291,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
                     value={hospitalData.physicianName}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
+                    className="w-full px-3 py-2 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
                     placeholder="Lead physician name"
                   />
                 </motion.div>
@@ -308,7 +308,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
               exit="exit"
               className="space-y-5"
             >
-              <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4">
+              <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 mb-3">
                 <h3 className="text-lg font-medium text-white mb-2">Security Setup</h3>
                 <p className="text-gray-400 text-sm mb-4">Create a secure password for your account</p>
                 
@@ -328,7 +328,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
                     value={hospitalData.password}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
+                    className="w-full px-3 py-2 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
                     placeholder="Create password"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pt-8">
@@ -391,7 +391,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
                     value={hospitalData.confirmPassword}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
+                    className="w-full px-3 py-2 bg-transparent text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:bg-transparent"
                     placeholder="Confirm password"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pt-8">
@@ -464,7 +464,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.5 }}
-            className="mt-8 flex items-center justify-between"
+            className="mt-4 flex items-center justify-between"
           >
             {currentStep > 1 ? (
               <motion.button
@@ -533,7 +533,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="mt-8 text-center"
+          className="mt-4 text-center"
         >
           <div className="text-gray-400 mb-4">
             Already have an account?
@@ -556,7 +556,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.7 }}
-          className="mt-8"
+          className="mt-4"
         >
           <div className="flex items-center justify-center space-x-6">
             <div className="flex items-center space-x-2">
