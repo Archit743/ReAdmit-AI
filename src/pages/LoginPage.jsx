@@ -14,6 +14,17 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+  const autofillStyle = `
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: white;
+    -webkit-box-shadow: 0 0 0px 1000px transparent inset;
+    transition: background-color 5000s ease-in-out 0s;
+    background-color: transparent !important;
+  }
+`;
+
   const handleChange = (e) => {
     setCredentials({
       ...credentials,
@@ -32,6 +43,7 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-950 flex items-center justify-center p-6">
+        <style>{autofillStyle}</style>
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-600 rounded-full filter blur-3xl opacity-20"></div>
         <div className="absolute top-40 -left-40 w-80 h-80 bg-purple-600 rounded-full filter blur-3xl opacity-20"></div>
@@ -42,33 +54,33 @@ const LoginPage = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="backdrop-blur-lg bg-white/8 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-8 relative z-10"
+        className="backdrop-blur-lg bg-white/8 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-7 relative z-10"
       >
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-center mb-8"
+          className="text-center mb-6"
         >
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-3">
             <motion.div 
-              className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30"
+              className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30"
               whileHover={{ rotate: 5, scale: 1.05 }}
             >
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </motion.div>
           </div>
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-2">Hospital Login</h2>
-          <p className="text-gray-400">Access your healthcare dashboard</p>
+          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-1">Hospital Login</h2>
+          <p className="text-gray-400 text-sm">Access your healthcare dashboard</p>
         </motion.div>
         
         {error && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl mb-6 backdrop-blur-sm"
+            className="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-2.5 rounded-xl mb-5 backdrop-blur-sm"
           >
             <div className="flex items-center">
               <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +92,7 @@ const LoginPage = () => {
         )}
         
         <form onSubmit={handleSubmit}>
-          <div className="space-y-5">
+          <div className="space-y-4">
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -98,7 +110,7 @@ const LoginPage = () => {
                   value={credentials.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500/50 text-white pl-10"
+                  className="w-full px-4 py-2.5 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500/50 text-white pl-10"
                   placeholder="Enter your email"
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -126,7 +138,7 @@ const LoginPage = () => {
                   value={credentials.password}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500/50 text-white pl-10"
+                  className="w-full px-4 py-2.5 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500/50 text-white pl-10"
                   placeholder="Enter your password"
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -181,14 +193,14 @@ const LoginPage = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.6 }}
-            className="mt-8"
+            className="mt-6"
           >
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className={`w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 shadow-lg shadow-blue-600/20 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              className={`w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 shadow-lg shadow-blue-600/20 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -214,9 +226,9 @@ const LoginPage = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.7 }}
-          className="mt-8 text-center"
+          className="mt-6 text-center"
         >
-          <div className="text-gray-400 mb-4">
+          <div className="text-gray-400 mb-3 text-sm">
             Don't have an account?
           </div>
           <Link to="/register">
@@ -237,9 +249,9 @@ const LoginPage = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.8 }}
-          className="mt-8"
+          className="mt-6"
         >
-          <div className="flex items-center justify-center space-x-6">
+          <div className="flex items-center justify-center space-x-5">
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 rounded-full bg-blue-500"></div>
               <div className="text-gray-400 text-xs">Secure Login</div>
@@ -250,7 +262,7 @@ const LoginPage = () => {
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-              <div className="text-gray-400 text-xs">End-to-End Encrypted</div>
+              <div className="text-gray-400 text-xs">Encrypted</div>
             </div>
           </div>
         </motion.div>
