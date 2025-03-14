@@ -72,6 +72,26 @@ export const registerHospital = createAsyncThunk(
   }
 );
 
+export const updateHospitalProfile = createAsyncThunk(
+  'auth/updateHospitalProfile',
+  async (profileData, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const data = await fetchData(`${API_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData)
+      });
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: loadAuthFromStorage(),
@@ -123,6 +143,21 @@ const authSlice = createSlice({
       .addCase(registerHospital.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Registration failed';
+      })
+      .addCase(updateHospitalProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateHospitalProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.hospitalInfo = action.payload.hospitalInfo;
+        state.error = null;
+        // Update localStorage with new hospital info
+        localStorage.setItem('hospitalInfo', JSON.stringify(action.payload.hospitalInfo));
+      })
+      .addCase(updateHospitalProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Profile update failed';
       });
   }
 });

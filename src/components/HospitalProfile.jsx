@@ -1,33 +1,46 @@
 // components/HospitalProfile.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useSelector, useDispatch } from 'react-redux';
+import axios from 'axios';
+import { updateHospitalProfile } from '../features/authSlice';
 
-const HospitalProfile = ({ hospitalInfo }) => {
-  // Sample data if none provided
-  const defaultHospitalInfo = {
-    name: "General Memorial Hospital",
-    address: "1234 Medical Center Blvd",
-    city: "San Francisco, CA 94143",
-    phone: "(415) 555-7890",
-    email: "info@generalmemorial.org",
-    type: "Level I Trauma Center",
-    beds: "450",
-    staff: "2,500+",
-    ...hospitalInfo // Merge provided info
-  };
+const API_URL = 'http://localhost:5000/api';
 
+const HospitalProfile = () => {
+  const dispatch = useDispatch();
+  const { hospitalInfo, token } = useSelector(state => state.auth);
+  
   const [isEditing, setIsEditing] = useState(false);
-  const [editedInfo, setEditedInfo] = useState(defaultHospitalInfo);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [editedInfo, setEditedInfo] = useState({
+    name: hospitalInfo?.name || "",
+    address: hospitalInfo?.address || "",
+    city: hospitalInfo?.city || "",
+    phone: hospitalInfo?.phone || "",
+    email: hospitalInfo?.email || "",
+    type: hospitalInfo?.type || "",
+    beds: hospitalInfo?.beds || "",
+    staff: hospitalInfo?.staff || "",
+    department: hospitalInfo?.department || "",
+    physicianName: hospitalInfo?.physicianName || ""
+  });
 
   const handleChange = (e) => {
     setEditedInfo({ ...editedInfo, [e.target.name]: e.target.value });
   };
 
   const handleSave = () => {
-    console.log("Updated Hospital Info:", editedInfo);
-    setIsEditing(false);
+    dispatch(updateHospitalProfile(editedInfo))
+      .unwrap()
+      .then(() => {
+        setIsEditing(false);
+      })
+      .catch((error) => {
+        console.error("Failed to update profile:", error);
+      });
   };
-  
 
   // Define groups for better organization
   const profileGroups = [
@@ -59,9 +72,7 @@ const HospitalProfile = ({ hospitalInfo }) => {
       .join(' ');
   };
 
-
   return (
-    
     <div className="space-y-6">
       {/* Hospital Card with Logo */}
       <motion.div
@@ -77,14 +88,16 @@ const HospitalProfile = ({ hospitalInfo }) => {
             </svg>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">{defaultHospitalInfo.name}</h2>
-            <p className="text-sm text-gray-400">{defaultHospitalInfo.type}</p>
+            <h2 className="text-xl font-bold text-white">{editedInfo.name || "Hospital Name"}</h2>
+            <p className="text-sm text-gray-400">{editedInfo.type || "Hospital Type"}</p>
             <div className="flex items-center mt-3 space-x-1 text-blue-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span className="text-xs">{defaultHospitalInfo.address}, {defaultHospitalInfo.city}</span>
+              <span className="text-xs">
+                {editedInfo.address ? `${editedInfo.address}, ${editedInfo.city}` : "No address provided"}
+              </span>
             </div>
           </div>
         </div>
@@ -100,7 +113,9 @@ const HospitalProfile = ({ hospitalInfo }) => {
               </div>
               <div>
                 <p className="text-xs text-gray-400">Capacity</p>
-                <p className="text-sm font-medium text-white">{defaultHospitalInfo.beds} Beds</p>
+                <p className="text-sm font-medium text-white">
+                  {editedInfo.beds ? `${editedInfo.beds} Beds` : "Not specified"}
+                </p>
               </div>
             </div>
           </div>
@@ -113,7 +128,9 @@ const HospitalProfile = ({ hospitalInfo }) => {
               </div>
               <div>
                 <p className="text-xs text-gray-400">Personnel</p>
-                <p className="text-sm font-medium text-white">{defaultHospitalInfo.staff}</p>
+                <p className="text-sm font-medium text-white">
+                  {editedInfo.staff || "Not specified"}
+                </p>
               </div>
             </div>
           </div>
@@ -121,55 +138,186 @@ const HospitalProfile = ({ hospitalInfo }) => {
       </motion.div>
 
       {/* Information Groups */}
-      {profileGroups.map((group, index) => (
+      {isEditing ? (
         <motion.div
-          key={group.title}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 * (index + 1) }}
+          transition={{ duration: 0.4 }}
           className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-5 shadow-lg border border-white/5 backdrop-blur-sm"
         >
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="p-1.5 rounded-full bg-blue-500/20 text-blue-400">
-              {group.icon}
+          <h3 className="text-md font-medium text-white mb-4">Edit Hospital Information</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Hospital Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={editedInfo.name || ""}
+                  onChange={handleChange}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Address</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={editedInfo.address || ""}
+                  onChange={handleChange}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">City</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={editedInfo.city || ""}
+                  onChange={handleChange}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Phone</label>
+                <input
+                  type="text"
+                  name="phone"
+                  value={editedInfo.phone || ""}
+                  onChange={handleChange}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
-            <h3 className="text-md font-medium text-white">{group.title}</h3>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={editedInfo.email || ""}
+                  onChange={handleChange}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Hospital Type</label>
+                <input
+                  type="text"
+                  name="type"
+                  value={editedInfo.type || ""}
+                  onChange={handleChange}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Number of Beds</label>
+                <input
+                  type="text"
+                  name="beds"
+                  value={editedInfo.beds || ""}
+                  onChange={handleChange}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Staff Count</label>
+                <input
+                  type="text"
+                  name="staff"
+                  value={editedInfo.staff || ""}
+                  onChange={handleChange}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
           </div>
-          <div className="space-y-3">
-          {group.fields.map(field => {
-  console.log(`Checking field: ${field}, Value:`, defaultHospitalInfo[field]); // Debugging output
-
-  return  (
-    <div key={field} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
-      <span className="text-sm text-gray-400">{formatFieldName(field)}</span>
-      <span className="text-sm text-white font-medium">{defaultHospitalInfo[field] || "N/A"}</span>
-    </div>
-  );
-})}
+          
+          {error && (
+            <div className="mt-4 bg-red-500/20 text-red-400 p-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+          
+          <div className="flex space-x-3 mt-6">
+            <button 
+              onClick={handleSave}
+              disabled={loading}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-xl font-medium text-sm transition-colors flex items-center justify-center space-x-2"
+            >
+              {loading ? "Saving..." : "Save Changes"}
+            </button>
+            <button 
+              onClick={() => setIsEditing(false)}
+              className="flex-1 bg-white/5 hover:bg-white/10 text-white py-2.5 px-4 rounded-xl font-medium text-sm transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         </motion.div>
-      ))}
+      ) : (
+        // View Mode - Profile Groups
+        profileGroups.map((group, index) => (
+          <motion.div
+            key={group.title}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 * (index + 1) }}
+            className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-5 shadow-lg border border-white/5 backdrop-blur-sm"
+          >
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="p-1.5 rounded-full bg-blue-500/20 text-blue-400">
+                {group.icon}
+              </div>
+              <h3 className="text-md font-medium text-white">{group.title}</h3>
+            </div>
+            <div className="space-y-3">
+              {group.fields.map(field => (
+                <div key={field} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                  <span className="text-sm text-gray-400">{formatFieldName(field)}</span>
+                  <span className="text-sm text-white font-medium">
+                    {editedInfo[field] || "Not provided"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        ))
+      )}
 
       {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.3 }}
-        className="flex space-x-3 mt-4"
-      >
-        <button className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 py-2.5 px-4 rounded-xl font-medium text-sm transition-colors flex items-center justify-center space-x-2" onClick={() => setIsEditing(!isEditing)}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-          </svg>
-          <span>Edit Profile</span>
-        </button>
-        <button className="flex-1 bg-white/5 hover:bg-white/10 text-white py-2.5 px-4 rounded-xl font-medium text-sm transition-colors flex items-center justify-center space-x-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          <span>Export Data</span>
-        </button>
-      </motion.div>
+      {!isEditing && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+          className="flex space-x-3 mt-4"
+        >
+          <button 
+            className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 py-2.5 px-4 rounded-xl font-medium text-sm transition-colors flex items-center justify-center space-x-2" 
+            onClick={() => setIsEditing(true)}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            <span>Edit Profile</span>
+          </button>
+          <button className="flex-1 bg-white/5 hover:bg-white/10 text-white py-2.5 px-4 rounded-xl font-medium text-sm transition-colors flex items-center justify-center space-x-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>Export Data</span>
+          </button>
+        </motion.div>
+      )}
     </div>
   );
 };
