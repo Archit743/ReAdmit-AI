@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Sidebar from '../components/Sidebar';
-import Dashboard from '../components/Dashboard';
+import Dashboard from '../components/dashboard/index';
 import PatientForm from '../components/PatientForm';
 
 const HomePage = () => {

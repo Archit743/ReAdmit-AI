@@ -18,6 +18,18 @@ const fetchWithAuth = async (url, options, getState) => {
 };
 
 // Async thunks for API operations
+
+export const fetchWeeklyStats = createAsyncThunk(
+  'patient/fetchWeeklyStats',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      return await fetchWithAuth(`${API_URL}/stats/weekly`, { method: 'GET' }, getState);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const fetchPatientRecords = createAsyncThunk(
   'patient/fetchPatientRecords',
   async (_, { getState, rejectWithValue }) => {
@@ -82,12 +94,44 @@ export const generatePrediction = createAsyncThunk(
   }
 );
 
+// Mock data thunk for development/demo purposes
+export const setMockWeeklyStats = createAsyncThunk(
+  'patient/setMockWeeklyStats',
+  async (_, { dispatch }) => {
+    // Mock weekly stats data
+    const mockData = {
+      currentWeek: {
+        totalPatients: 87,
+        pendingAssessments: 12,
+        avgReadmissionRisk: 42.3,
+        highRiskPatients: 15
+      },
+      lastWeek: {
+        totalPatients: 82,
+        pendingAssessments: 14,
+        avgReadmissionRisk: 45.7,
+        highRiskPatients: 18
+      },
+      trendData: [
+        { week: 'Feb 15-21', totalPatients: 78, avgReadmissionRisk: 48.2, highRiskPatients: 20, pendingAssessments: 18 },
+        { week: 'Feb 22-28', totalPatients: 82, avgReadmissionRisk: 45.7, highRiskPatients: 18, pendingAssessments: 14 },
+        { week: 'Mar 1-7', totalPatients: 85, avgReadmissionRisk: 44.1, highRiskPatients: 17, pendingAssessments: 13 },
+        { week: 'Mar 8-14', totalPatients: 87, avgReadmissionRisk: 42.3, highRiskPatients: 15, pendingAssessments: 12 }
+      ]
+    };
+    
+    return mockData;
+  }
+);
+
 const patientSlice = createSlice({
   name: 'patient',
   initialState: {
     currentPatient: null,
     predictionResult: null,
     patientRecords: [],
+    weeklyStats: null,     // Add this new state property
+    trendData: [],   
     loading: false,
     error: null,
   },
@@ -175,6 +219,34 @@ const patientSlice = createSlice({
       .addCase(generatePrediction.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Add cases for weeklyStats
+      .addCase(fetchWeeklyStats.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchWeeklyStats.fulfilled, (state, action) => {
+        state.loading = false;
+        state.weeklyStats = {
+          currentWeek: action.payload.currentWeek,
+          lastWeek: action.payload.lastWeek
+        };
+        state.trendData = action.payload.trendData;
+        state.error = null;
+      })
+      .addCase(fetchWeeklyStats.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Add case for mock data
+      .addCase(setMockWeeklyStats.fulfilled, (state, action) => {
+        state.loading = false;
+        state.weeklyStats = {
+          currentWeek: action.payload.currentWeek,
+          lastWeek: action.payload.lastWeek
+        };
+        state.trendData = action.payload.trendData;
+        state.error = null;
       });
   },
 });
