@@ -94,261 +94,272 @@ const FollowUpScheduler = ({ patient, prediction }) => {
     }
   }, [selectedProvider, selectedDate, providers]);
 
-  return (
-    <div className="backdrop-blur-sm bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-950 rounded-2xl border border-white/10 shadow-xl overflow-hidden p-6 relative z-10">
-      {/* Background effects */}
-      <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-600 rounded-full filter blur-3xl opacity-20"></div>
-      <div className="absolute bottom-20 -left-40 w-80 h-80 bg-purple-600 rounded-full filter blur-3xl opacity-20"></div>
+  // Styles for form inputs to match patient form
+  const inputStyle = "w-full px-4 py-2.5 bg-transparent border border-white/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 text-white";
+  const sectionStyle = "backdrop-blur-sm bg-white/5 border border-white/10 rounded-xl overflow-hidden mb-5";
+  const sectionHeaderStyle = "px-4 py-2 bg-white/5 border-b border-white/10 text-sm font-medium text-gray-300";
 
+  return (
+    <div className="bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-950 rounded-2xl shadow-2xl border border-white/10 backdrop-blur-lg p-7 w-full mx-auto">
       {/* Header */}
-      <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-6">
-        Schedule Follow-Up
-      </h3>
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center mb-6"
+      >
+        <motion.div 
+          className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 mr-3"
+          whileHover={{ rotate: 5, scale: 1.05 }}
+        >
+          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </motion.div>
+        <div>
+          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Schedule Follow-Up</h2>
+          <p className="text-gray-400 text-sm">Plan the next patient appointment</p>
+        </div>
+      </motion.div>
+
+      {/* Recommended Follow-Up */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="backdrop-blur-sm bg-white/5 border border-white/10 rounded-xl p-3 mb-6 flex items-center"
+      >
+        <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+        <span className="text-sm text-gray-400 mr-2">Recommended follow-up:</span>
+        <span className="text-sm font-medium text-white">
+          {getRecommendedFollowUp()} (based on {prediction.readmissionRisk} risk)
+        </span>
+      </motion.div>
 
       {/* Appointment Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit}>
         {/* Date and Time Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Appointment Date</label>
-            <div className="relative">
-              <input
-                type="date"
-                min={today}
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
-                required
-              />
-              <svg
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className={sectionStyle}
+        >
+          <div className={sectionHeaderStyle}>Appointment Details</div>
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="relative">
+                <input
+                  type="date"
+                  min={today}
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className={inputStyle}
+                  placeholder="Select Date"
+                  required
                 />
-              </svg>
-            </div>
-            {errors.date && <p className="text-red-400 text-sm mt-1">{errors.date}</p>}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Appointment Time</label>
-            <div className="relative">
-              <select
-                value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 appearance-none"
-                required
-              >
-                <option value="" disabled className="text-gray-500">
-                  Select a time
-                </option>
-                {timeSlots.map((time) => (
-                  <option key={time} value={time} className="text-gray-800">
-                    {time}
-                  </option>
-                ))}
-              </select>
-              <svg
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+                {errors.date && <p className="text-red-400 text-xs mt-1">{errors.date}</p>}
+              </div>
+              <div className="relative">
+                <select
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  className={`${inputStyle} bg-transparent`}
+                  required
+                >
+                  <option value="" disabled className="bg-gray-800">Select Time</option>
+                  {timeSlots.map((time) => (
+                    <option key={time} value={time} className="bg-gray-800">
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="relative md:col-span-2">
+                <select
+                  value={selectedProvider}
+                  onChange={(e) => setSelectedProvider(e.target.value)}
+                  className={`${inputStyle} bg-transparent`}
+                  required
+                >
+                  <option value="" disabled className="bg-gray-800">Select Provider</option>
+                  {providers.map((provider) => (
+                    <option key={provider.id} value={provider.id} className="bg-gray-800">
+                      {provider.name} - {provider.specialty} ({provider.availability.join(', ')})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Provider Selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Select Provider</label>
-          <div className="relative">
-            <select
-              value={selectedProvider}
-              onChange={(e) => setSelectedProvider(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 appearance-none"
-              required
-            >
-              <option value="" disabled className="text-gray-500">
-                Select a provider
-              </option>
-              {providers.map((provider) => (
-                <option key={provider.id} value={provider.id} className="text-gray-800">
-                  {provider.name} - {provider.specialty} ({provider.availability.join(', ')})
-                </option>
-              ))}
-            </select>
-            <svg
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-          </div>
-        </div>
+        </motion.div>
 
         {/* Visit Type Selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Visit Type</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {visitTypes.map((type) => (
-              <motion.label
-                key={type.id}
-                whileHover={{ scale: 1.02 }}
-                className={`flex items-center p-3 rounded-xl cursor-pointer border backdrop-blur-sm ${
-                  visitType === type.id
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-500/50 text-white'
-                    : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="visitType"
-                  value={type.id}
-                  checked={visitType === type.id}
-                  onChange={() => setVisitType(type.id)}
-                  className="hidden"
-                />
-                <span className="ml-2">{type.label}</span>
-              </motion.label>
-            ))}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+          className={sectionStyle}
+        >
+          <div className={sectionHeaderStyle}>Visit Type</div>
+          <div className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {visitTypes.map((type) => (
+                <motion.label
+                  key={type.id}
+                  whileHover={{ scale: 1.02 }}
+                  className={`flex items-center p-3 rounded-xl cursor-pointer border backdrop-blur-sm ${
+                    visitType === type.id
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-500/50 text-white'
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="visitType"
+                    value={type.id}
+                    checked={visitType === type.id}
+                    onChange={() => setVisitType(type.id)}
+                    className="hidden"
+                  />
+                  <span className="ml-2">{type.label}</span>
+                </motion.label>
+              ))}
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Notes Section */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Additional Notes</label>
-          <div className="relative">
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows="3"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
-              placeholder="Enter any special instructions or notes..."
-            />
-            <svg
-              className="absolute left-3 top-6 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.4 }}
+          className={sectionStyle}
+        >
+          <div className={sectionHeaderStyle}>Additional Notes</div>
+          <div className="p-4 space-y-2">
+            <div className="relative">
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows="3"
+                className={inputStyle}
+                placeholder="Enter any special instructions or notes..."
+              ></textarea>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={() => setNotes(noteTemplates[visitType] || '')}
+              className="text-sm text-blue-400 hover:text-blue-300"
+              disabled={!visitType}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
+              Insert Template
+            </motion.button>
           </div>
+        </motion.div>
+
+        {/* Appointment Preview */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.5 }}
+          className={sectionStyle}
+        >
+          <div className={sectionHeaderStyle}>Appointment Preview</div>
+          <div className="p-4">
+            <div className="space-y-2 text-sm">
+              <p>
+                <span className="text-gray-400">Date:</span> {selectedDate || 'Not selected'}
+              </p>
+              <p>
+                <span className="text-gray-400">Time:</span> {selectedTime || 'Not selected'}
+              </p>
+              <p>
+                <span className="text-gray-400">Provider:</span>{' '}
+                {selectedProvider
+                  ? providers.find((p) => p.id === parseInt(selectedProvider))?.name
+                  : 'Not selected'}
+              </p>
+              <p>
+                <span className="text-gray-400">Visit Type:</span>{' '}
+                {visitType ? visitTypes.find((v) => v.id === visitType)?.label : 'Not selected'}
+              </p>
+              <p>
+                <span className="text-gray-400">Notes:</span> {notes || 'None'}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Upcoming Appointments */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.6 }}
+          className={sectionStyle}
+        >
+          <div className={sectionHeaderStyle}>Patient's Upcoming Appointments</div>
+          <div className="p-4">
+            {upcomingAppointments.length > 0 ? (
+              <ul className="space-y-3">
+                {upcomingAppointments.map((appt) => (
+                  <li key={appt.id} className="bg-white/5 p-3 rounded-xl border border-white/10">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="text-white font-medium text-sm">
+                          {appt.date} at {appt.time}
+                        </div>
+                        <div className="text-gray-300 text-sm">
+                          {appt.provider} - {appt.visitType}
+                        </div>
+                      </div>
+                      <div className="space-x-2">
+                        <button className="text-blue-400 hover:text-blue-300 text-xs">Reschedule</button>
+                        <button className="text-red-400 hover:text-red-300 text-xs">Cancel</button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-center text-gray-400 py-4 text-sm">No upcoming appointments scheduled.</div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Submit Button */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.7 }}
+          className="flex justify-between mt-6"
+        >
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             type="button"
-            onClick={() => setNotes(noteTemplates[visitType] || '')}
-            className="mt-2 text-sm text-blue-400 hover:text-blue-300"
-            disabled={!visitType}
+            className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-300 hover:bg-white/10 transition-colors"
           >
-            Insert Template
+            Cancel
           </motion.button>
-        </div>
-
-        {/* Submit Button */}
-        <div className="text-center">
+          
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="submit"
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg border border-white/10"
+            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl text-white font-medium shadow-lg shadow-blue-600/20"
           >
-            Schedule Appointment
+            <span className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Schedule Appointment
+            </span>
           </motion.button>
-        </div>
+        </motion.div>
       </form>
-
-      {/* Appointment Preview */}
-      <div className="mt-6 backdrop-blur-lg bg-white/5 border border-white/10 rounded-xl p-5">
-        <h4 className="text-sm font-medium text-gray-300 mb-2">Appointment Preview</h4>
-        <div className="space-y-2">
-          <p>
-            <span className="text-gray-400">Date:</span> {selectedDate || 'Not selected'}
-          </p>
-          <p>
-            <span className="text-gray-400">Time:</span> {selectedTime || 'Not selected'}
-          </p>
-          <p>
-            <span className="text-gray-400">Provider:</span>{' '}
-            {selectedProvider
-              ? providers.find((p) => p.id === parseInt(selectedProvider))?.name
-              : 'Not selected'}
-          </p>
-          <p>
-            <span className="text-gray-400">Visit Type:</span>{' '}
-            {visitType ? visitTypes.find((v) => v.id === visitType)?.label : 'Not selected'}
-          </p>
-          <p>
-            <span className="text-gray-400">Notes:</span> {notes || 'None'}
-          </p>
-        </div>
-      </div>
-
-      {/* Recommended Follow-Up */}
-      <div className="mt-6 backdrop-blur-lg bg-white/5 border border-white/10 rounded-xl p-5">
-        <h4 className="text-sm font-medium text-gray-300 mb-2">Recommended Follow-Up</h4>
-        <p className="text-gray-400 text-sm">
-          Based on risk assessment ({prediction.readmissionRisk}), we recommend follow-up in{' '}
-          {getRecommendedFollowUp()}.
-        </p>
-      </div>
-
-      {/* Upcoming Appointments */}
-      <div className="mt-6">
-        <h4 className="text-sm font-medium text-gray-300 mb-2">Patient's Upcoming Appointments</h4>
-        <div className="backdrop-blur-lg bg-white/5 border border-white/10 rounded-xl p-5">
-          {upcomingAppointments.length > 0 ? (
-            <ul className="space-y-4">
-              {upcomingAppointments.map((appt) => (
-                <li key={appt.id} className="bg-white/5 p-4 rounded-xl">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="text-white font-medium">
-                        {appt.date} at {appt.time}
-                      </div>
-                      <div className="text-gray-300">
-                        {appt.provider} - {appt.visitType}
-                      </div>
-                    </div>
-                    <div className="space-x-2">
-                      <button className="text-blue-400 hover:text-blue-300 text-sm">Reschedule</button>
-                      <button className="text-red-400 hover:text-red-300 text-sm">Cancel</button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="text-center text-gray-400 py-6">No upcoming appointments scheduled.</div>
-          )}
-        </div>
-      </div>
     </div>
   );
 };

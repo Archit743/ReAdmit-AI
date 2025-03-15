@@ -94,6 +94,51 @@ export const generatePrediction = createAsyncThunk(
   }
 );
 
+export const updatePatientApprovalStatus = createAsyncThunk(
+  'patient/updatePatientApprovalStatus',
+  async (approvalData, { getState, rejectWithValue }) => {
+    try {
+      const { patientId, status, approvedAt } = approvalData;
+      // Get the user ID from auth state if available
+      const { auth } = getState();
+      const userId = auth.user?._id || null;
+      
+      // Status should be correctly converted to boolean
+      const isApproved = status === 'APPROVED';
+      
+      const requestBody = {
+        isApproved,
+        approvedAt: approvedAt || (isApproved ? new Date().toISOString() : null)
+        // Let the server handle approvedBy
+      };
+
+      console.log('Sending approval request with patientId:', patientId);
+      console.log('Approval data:', { 
+        isApproved, 
+        approvedAt,
+        // Use actual user ID from auth state if available, otherwise null
+        approvedBy: userId 
+      });
+      
+      // Make API call to update the approval status
+      const result = await fetchWithAuth(`${API_URL}/patients/${patientId}/approval`, {
+        method: 'PATCH',
+        body: JSON.stringify(requestBody),
+      }, getState);
+      
+      return { 
+        patientId, 
+        isApproved, 
+        approvedAt: result.approvedAt,
+        approvedBy: result.approvedBy
+      };
+    } catch (error) {
+      console.error('Error in updatePatientApprovalStatus:', error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Mock data thunk for development/demo purposes
 export const setMockWeeklyStats = createAsyncThunk(
   'patient/setMockWeeklyStats',
@@ -130,7 +175,7 @@ const patientSlice = createSlice({
     currentPatient: null,
     predictionResult: null,
     patientRecords: [],
-    weeklyStats: null,     // Add this new state property
+    weeklyStats: null,    
     trendData: [],   
     loading: false,
     error: null,
@@ -146,7 +191,11 @@ const patientSlice = createSlice({
       }
     },
     addPatientRecord: (state, action) => {
-      state.patientRecords.push(action.payload);  // ✅ Directly push instead of spread operator
+      // Add isApproved field with default value of false
+      state.patientRecords.push({
+        ...action.payload,
+        isApproved: action.payload.isApproved || false
+      });
     },
 
     // New reducer for removing a patient record
@@ -164,7 +213,24 @@ const patientSlice = createSlice({
     setError: (state, action) => {
       state.error = action.payload;
     },
-  },
+  // Add a manual approval action for testing/direct updates
+  setPatientApprovalStatus: (state, action) => {
+    const { patientId, isApproved } = action.payload;
+    
+    // Update current patient if it matches
+    if (state.currentPatient && state.currentPatient.id === patientId) {
+      state.currentPatient.isApproved = isApproved;
+      state.currentPatient.approvedAt = new Date().toISOString();
+    }
+    
+    // Update in records array
+    const patientIndex = state.patientRecords.findIndex(p => p._id === patientId || p.id === patientId);
+    if (patientIndex !== -1) {
+      state.patientRecords[patientIndex].isApproved = isApproved;
+      state.patientRecords[patientIndex].approvedAt = new Date().toISOString();
+    }
+  }
+},
   extraReducers: (builder) => {
     builder
       .addCase(fetchPatientRecords.pending, (state) => {
@@ -247,6 +313,35 @@ const patientSlice = createSlice({
         };
         state.trendData = action.payload.trendData;
         state.error = null;
+      })
+       // Handle the approval status update
+       .addCase(updatePatientApprovalStatus.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updatePatientApprovalStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        const { patientId, isApproved, approvedAt, approvedBy } = action.payload;
+        
+        // Update current patient if it matches
+        if (state.currentPatient && (state.currentPatient.id === patientId || state.currentPatient._id === patientId)) {
+          state.currentPatient.isApproved = isApproved;
+          state.currentPatient.approvedAt = approvedAt;
+          state.currentPatient.approvedBy = approvedBy;
+        }
+        
+        // Update in records array
+        const patientIndex = state.patientRecords.findIndex(p => p._id === patientId || p.id === patientId);
+        if (patientIndex !== -1) {
+          state.patientRecords[patientIndex].isApproved = isApproved;
+          state.patientRecords[patientIndex].approvedAt = approvedAt;
+          state.patientRecords[patientIndex].approvedBy = approvedBy;
+        }
+        
+        state.error = null;
+      })
+      .addCase(updatePatientApprovalStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
@@ -259,6 +354,7 @@ export const {
   clearPatientData,
   setLoading,
   setError,
+  setPatientApprovalStatus
 } = patientSlice.actions;
 
 export default patientSlice.reducer;

@@ -39,6 +39,41 @@ const fetchData = async (url, options) => {
   return data;
 };
 
+export const verifyToken = createAsyncThunk(
+  'auth/verifyToken',
+  async (_, { getState, rejectWithValue, dispatch }) => {
+    try {
+      const { token } = getState().auth;
+      
+      if (!token) {
+        // No token found, reject
+        return rejectWithValue('No token found');
+      }
+      
+      // Call your verification endpoint
+      const response = await fetch(`${API_URL}/auth/verify`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        // Token is invalid, log the user out
+        dispatch(logout());
+        return rejectWithValue('Token invalid or expired');
+      }
+      
+      // Token is valid, return success
+      return await response.json();
+    } catch (error) {
+      // Error occurred, log the user out
+      dispatch(logout());
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Async thunks for authentication
 export const loginHospital = createAsyncThunk(
   'auth/loginHospital',
@@ -158,6 +193,17 @@ const authSlice = createSlice({
       .addCase(updateHospitalProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Profile update failed';
+      })
+      .addCase(verifyToken.rejected, (state) => {
+        // When verification fails, reset auth state
+        state.token = null;
+        state.hospitalInfo = null;
+        state.isAuthenticated = false;
+        clearAuthFromStorage();
+      })
+      .addCase(verifyToken.fulfilled, (state) => {
+        // Token is valid, ensure authenticated state is true
+        state.isAuthenticated = true;
       });
   }
 });

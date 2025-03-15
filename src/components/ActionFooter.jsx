@@ -1,16 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useDispatch, useSelector } from 'react-redux';
+import { updatePatientApprovalStatus } from '../features/patientSlice';
 
 const ActionFooter = ({ patient, prediction }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isSharing, setIsSharing] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
   const [approveSuccess, setApproveSuccess] = useState(false);
   const [printSuccess, setPrintSuccess] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   
+  const patientId = patient?._id || patient?.id;
+  const patientApprovalStatus = useSelector(state => 
+    state.patients?.patientApprovals?.[patientId] || { isApproved: false }
+  );
+
+    // Update local state if Redux store changes
+    useEffect(() => {
+      if (patientApprovalStatus.isApproved) {
+        setIsApproved(true);
+        setApproveSuccess(true);
+      }
+    }, [patientApprovalStatus]);
+
   // Setup afterprint event listener
   useEffect(() => {
     const handleAfterPrint = () => {
@@ -160,29 +177,52 @@ const ActionFooter = ({ patient, prediction }) => {
     }
   };
 
-  // Approve plan function
   const handleApprovePlan = async () => {
+    if (isApproved) {
+      return;
+    }
     try {
       // Simulating API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      const approvedAt = new Date().toISOString();
+      
+      // Check which ID field is actually available on your patient object
+      console.log("Patient object:", patient);
+      
+      // Use the correct ID field - try both possibilities
+      const patientId = patient?._id || patient?.id;
+      
+      if (!patientId) {
+        console.error("No patient ID found:", patient);
+        alert("Error: No patient ID found");
+        return;
+      }
+      
       const approvalData = {
-        patientId: patient?.id,
+        patientId: patientId,
         predictionId: prediction?.id,
-        approvedAt: new Date().toISOString(),
-        approvedBy: 'Current User',
+        approvedAt: approvedAt,
         status: 'APPROVED'
       };
       
-      // Log the approval data to show something is happening
       console.log('Approval data:', approvalData);
       
+      // Update the Redux store with approval status
+      dispatch(updatePatientApprovalStatus({
+        patientId: patientId,
+        status: 'APPROVED',  // Add this explicitly 
+        isApproved: true,    // Add this explicitly
+        approvedAt: approvedAt,
+      }));
+      setIsApproved(true);
       setApproveSuccess(true);
       
-      // Reset success message after 3 seconds
       setTimeout(() => {
-        setApproveSuccess(false);
+        setApproveSuccess(false); 
+        // Note: Don't reset isApproved here
       }, 3000);
+
     } catch (error) {
       console.error('Error approving plan:', error);
       alert('Failed to approve plan. Please try again.');
@@ -291,12 +331,13 @@ const ActionFooter = ({ patient, prediction }) => {
       <div className="flex flex-wrap gap-3">
         <motion.div className="relative">
           <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`${buttonVariants.filled.className} ${buttonVariants.filled.colors(approveSuccess ? "green" : "amber")}`}
+            whileHover={{ scale: isApproved ? 1 : 1.05 }}
+            whileTap={{ scale: isApproved ? 1 : 0.95 }}
+            className={`${buttonVariants.filled.className} ${buttonVariants.filled.colors(isApproved ? "green" : "amber")}`}
             onClick={handleApprovePlan}
+            disabled={isApproved}
           >
-            <div className={`p-2 bg-gradient-to-br ${approveSuccess ? greenColors.gradient : amberColors.gradient} rounded-lg text-white flex-shrink-0 shadow-lg mr-2`}>
+            <div className={`p-2 bg-gradient-to-br ${isApproved ? greenColors.gradient : amberColors.gradient} rounded-lg text-white flex-shrink-0 shadow-lg mr-2`}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
