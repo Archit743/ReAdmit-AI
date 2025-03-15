@@ -1,7 +1,7 @@
 // components/Dashboard/index.js
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
 import StatsSection from './StatsSection';
 import ActivitySection from './ActivitySection';
@@ -17,6 +17,7 @@ const Dashboard = ({ onGenerateEntry }) => {
   const [stats, setStats] = useState({
     totalPatients: 0,
     pendingAssessments: 0,
+    unapprovedAssessments: 0,
     avgReadmissionRisk: '0%',
     highRiskPatients: 0
   });
@@ -24,6 +25,7 @@ const Dashboard = ({ onGenerateEntry }) => {
   const [changes, setChanges] = useState({
     totalPatients: 0,
     pendingAssessments: 0,
+    unapprovedAssessments: 0,
     avgReadmissionRisk: 0,
     highRiskPatients: 0
   });
@@ -53,6 +55,11 @@ const Dashboard = ({ onGenerateEntry }) => {
         patient => patient.readmissionRisk === undefined || patient.readmissionRisk === null
       ).length;
       
+      // Count unapproved assessments
+      const unapprovedAssessments = patientRecords.filter(
+        patient => patient.isApproved === false
+      ).length;
+      
       // Calculate average readmission risk (for patients who have been assessed)
       const assessedPatients = patientRecords.filter(
         patient => patient.readmissionRisk !== undefined && patient.readmissionRisk !== null
@@ -74,6 +81,7 @@ const Dashboard = ({ onGenerateEntry }) => {
       setStats({
         totalPatients,
         pendingAssessments,
+        unapprovedAssessments,
         avgReadmissionRisk: `${avgRisk.toFixed(1)}%`,
         highRiskPatients
       });
@@ -94,6 +102,9 @@ const Dashboard = ({ onGenerateEntry }) => {
           : 0,
         pendingAssessments: lastWeek.pendingAssessments > 0 
           ? ((stats.pendingAssessments - lastWeek.pendingAssessments) / lastWeek.pendingAssessments) * 100 
+          : 0,
+        unapprovedAssessments: lastWeek.unapprovedAssessments > 0
+          ? ((stats.unapprovedAssessments - lastWeek.unapprovedAssessments) / lastWeek.unapprovedAssessments) * 100
           : 0,
         avgReadmissionRisk: lastWeek.avgReadmissionRisk > 0 
           ? ((parseFloat(stats.avgReadmissionRisk) - lastWeek.avgReadmissionRisk) / lastWeek.avgReadmissionRisk) * 100 
@@ -125,7 +136,7 @@ const Dashboard = ({ onGenerateEntry }) => {
 
         {/* Stats Cards */}
         <StatsSection 
-          stats={stats} 
+          currentStats={stats} 
           isLoaded={isLoaded} 
           changes={changes} 
         />

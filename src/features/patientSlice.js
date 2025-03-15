@@ -23,8 +23,44 @@ export const fetchWeeklyStats = createAsyncThunk(
   'patient/fetchWeeklyStats',
   async (_, { getState, rejectWithValue }) => {
     try {
-      return await fetchWithAuth(`${API_URL}/stats/weekly`, { method: 'GET' }, getState);
+      // Get the API response
+      const response = await fetchWithAuth(`${API_URL}/stats/weekly`, { method: 'GET' }, getState);
+      
+      // Log the API response for debugging
+      console.log('API weekly stats response:', response);
+      
+      // Return the unmodified API response
+      return response;
     } catch (error) {
+      console.error('Failed to fetch weekly stats:', error);
+      
+      // Use mock data if in development mode or API fails
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Using mock data due to API error');
+        return {
+          currentWeek: {
+            totalPatients: 87,
+            pendingAssessments: 12,
+            unapprovedAssessments: 10,
+            avgReadmissionRisk: 42.3,
+            highRiskPatients: 15
+          },
+          lastWeek: {
+            totalPatients: 82,
+            pendingAssessments: 14,
+            unapprovedAssessments: 13,
+            avgReadmissionRisk: 45.7,
+            highRiskPatients: 18
+          },
+          trendData: [
+            { week: 'Feb 15-21', totalPatients: 78, avgReadmissionRisk: 48.2, highRiskPatients: 20, pendingAssessments: 18, unapprovedAssessments: 14 },
+            { week: 'Feb 22-28', totalPatients: 82, avgReadmissionRisk: 45.7, highRiskPatients: 18, pendingAssessments: 14, unapprovedAssessments: 12 },
+            { week: 'Mar 1-7', totalPatients: 85, avgReadmissionRisk: 44.1, highRiskPatients: 17, pendingAssessments: 13, unapprovedAssessments: 11 },
+            { week: 'Mar 8-14', totalPatients: 87, avgReadmissionRisk: 42.3, highRiskPatients: 15, pendingAssessments: 12, unapprovedAssessments: 10 }
+          ]
+        };
+      }
+      
       return rejectWithValue(error.message);
     }
   }
@@ -96,7 +132,7 @@ export const generatePrediction = createAsyncThunk(
 
 export const updatePatientApprovalStatus = createAsyncThunk(
   'patient/updatePatientApprovalStatus',
-  async (approvalData, { getState, rejectWithValue }) => {
+  async (approvalData, { getState, dispatch, rejectWithValue }) => {
     try {
       const { patientId, status, approvedAt } = approvalData;
       // Get the user ID from auth state if available
@@ -126,6 +162,8 @@ export const updatePatientApprovalStatus = createAsyncThunk(
         body: JSON.stringify(requestBody),
       }, getState);
       
+      dispatch(fetchWeeklyStats());
+
       return { 
         patientId, 
         isApproved, 
@@ -142,26 +180,34 @@ export const updatePatientApprovalStatus = createAsyncThunk(
 // Mock data thunk for development/demo purposes
 export const setMockWeeklyStats = createAsyncThunk(
   'patient/setMockWeeklyStats',
-  async (_, { dispatch }) => {
-    // Mock weekly stats data
+  async (_, { getState }) => {
+    // Get patient records from state
+    const { patientRecords } = getState().patient;
+    
+    // Calculate unapproved count
+    const unapprovedCount = patientRecords.filter(patient => patient.isApproved === false).length;
+    
+    // Mock weekly stats data with unapprovedAssessments
     const mockData = {
       currentWeek: {
         totalPatients: 87,
         pendingAssessments: 12,
+        unapprovedAssessments: unapprovedCount, // Fallback value if no records
         avgReadmissionRisk: 42.3,
         highRiskPatients: 15
       },
       lastWeek: {
         totalPatients: 82,
         pendingAssessments: 14,
+        unapprovedAssessments: unapprovedCount +3, // Simulate a decrease for trend
         avgReadmissionRisk: 45.7,
         highRiskPatients: 18
       },
       trendData: [
-        { week: 'Feb 15-21', totalPatients: 78, avgReadmissionRisk: 48.2, highRiskPatients: 20, pendingAssessments: 18 },
-        { week: 'Feb 22-28', totalPatients: 82, avgReadmissionRisk: 45.7, highRiskPatients: 18, pendingAssessments: 14 },
-        { week: 'Mar 1-7', totalPatients: 85, avgReadmissionRisk: 44.1, highRiskPatients: 17, pendingAssessments: 13 },
-        { week: 'Mar 8-14', totalPatients: 87, avgReadmissionRisk: 42.3, highRiskPatients: 15, pendingAssessments: 12 }
+        { week: 'Feb 15-21', totalPatients: 78, avgReadmissionRisk: 48.2, highRiskPatients: 20, pendingAssessments: 18, unapprovedAssessments: 14 },
+        { week: 'Feb 22-28', totalPatients: 82, avgReadmissionRisk: 45.7, highRiskPatients: 18, pendingAssessments: 14, unapprovedAssessments: 12 },
+        { week: 'Mar 1-7', totalPatients: 85, avgReadmissionRisk: 44.1, highRiskPatients: 17, pendingAssessments: 13, unapprovedAssessments: 11 },
+        { week: 'Mar 8-14', totalPatients: 87, avgReadmissionRisk: 42.3, highRiskPatients: 15, pendingAssessments: 12, unapprovedAssessments: unapprovedCount || 10 }
       ]
     };
     
@@ -213,23 +259,23 @@ const patientSlice = createSlice({
     setError: (state, action) => {
       state.error = action.payload;
     },
-  // Add a manual approval action for testing/direct updates
-  setPatientApprovalStatus: (state, action) => {
-    const { patientId, isApproved } = action.payload;
-    
-    // Update current patient if it matches
-    if (state.currentPatient && state.currentPatient.id === patientId) {
-      state.currentPatient.isApproved = isApproved;
-      state.currentPatient.approvedAt = new Date().toISOString();
+    // Add a manual approval action for testing/direct updates
+    setPatientApprovalStatus: (state, action) => {
+      const { patientId, isApproved } = action.payload;
+      
+      // Update current patient if it matches
+      if (state.currentPatient && state.currentPatient.id === patientId) {
+        state.currentPatient.isApproved = isApproved;
+        state.currentPatient.approvedAt = new Date().toISOString();
+      }
+      
+      // Update in records array
+      const patientIndex = state.patientRecords.findIndex(p => p._id === patientId || p.id === patientId);
+      if (patientIndex !== -1) {
+        state.patientRecords[patientIndex].isApproved = isApproved;
+        state.patientRecords[patientIndex].approvedAt = new Date().toISOString();
+      }
     }
-    
-    // Update in records array
-    const patientIndex = state.patientRecords.findIndex(p => p._id === patientId || p.id === patientId);
-    if (patientIndex !== -1) {
-      state.patientRecords[patientIndex].isApproved = isApproved;
-      state.patientRecords[patientIndex].approvedAt = new Date().toISOString();
-    }
-  }
 },
   extraReducers: (builder) => {
     builder
@@ -318,31 +364,35 @@ const patientSlice = createSlice({
        .addCase(updatePatientApprovalStatus.pending, (state) => {
         state.loading = true;
       })
-      .addCase(updatePatientApprovalStatus.fulfilled, (state, action) => {
-        state.loading = false;
-        const { patientId, isApproved, approvedAt, approvedBy } = action.payload;
-        
-        // Update current patient if it matches
-        if (state.currentPatient && (state.currentPatient.id === patientId || state.currentPatient._id === patientId)) {
-          state.currentPatient.isApproved = isApproved;
-          state.currentPatient.approvedAt = approvedAt;
-          state.currentPatient.approvedBy = approvedBy;
-        }
-        
-        // Update in records array
-        const patientIndex = state.patientRecords.findIndex(p => p._id === patientId || p.id === patientId);
-        if (patientIndex !== -1) {
-          state.patientRecords[patientIndex].isApproved = isApproved;
-          state.patientRecords[patientIndex].approvedAt = approvedAt;
-          state.patientRecords[patientIndex].approvedBy = approvedBy;
-        }
-        
-        state.error = null;
-      })
-      .addCase(updatePatientApprovalStatus.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
+      // In extraReducers section of patientSlice.js
+.addCase(updatePatientApprovalStatus.fulfilled, (state, action) => {
+  state.loading = false;
+  const { patientId, isApproved, approvedAt, approvedBy } = action.payload;
+  
+  // Update current patient if it matches
+  if (state.currentPatient && (state.currentPatient.id === patientId || state.currentPatient._id === patientId)) {
+    state.currentPatient.isApproved = isApproved;
+    state.currentPatient.approvedAt = approvedAt;
+    state.currentPatient.approvedBy = approvedBy;
+  }
+  
+  // Update in records array
+  const patientIndex = state.patientRecords.findIndex(p => p._id === patientId || p.id === patientId);
+  if (patientIndex !== -1) {
+    state.patientRecords[patientIndex].isApproved = isApproved;
+    state.patientRecords[patientIndex].approvedAt = approvedAt;
+    state.patientRecords[patientIndex].approvedBy = approvedBy;
+  }
+  
+  // Update weekly stats if they exist
+  if (state.weeklyStats && state.weeklyStats.currentWeek) {
+    // Recalculate unapproved assessments count
+    const unapprovedCount = state.patientRecords.filter(patient => patient.isApproved === false).length;
+    state.weeklyStats.currentWeek.unapprovedAssessments = unapprovedCount;
+  }
+  
+  state.error = null;
+})
   },
 });
 

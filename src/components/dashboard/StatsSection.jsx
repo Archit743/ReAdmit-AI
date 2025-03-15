@@ -1,10 +1,18 @@
-// components/Dashboard/StatsSection.js
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import StatsCard from './StatsCard';
 import { UsersIcon, ClipboardIcon, ChartIcon, AlertIcon } from './common/icons';
 
-const StatsSection = ({ stats, isLoaded, changes = {} }) => {
+const StatsSection = ({ currentStats = {}, isLoaded, changes = {} }) => {
+  // Provide default values to prevent undefined errors
+  const stats = {
+    totalPatients: 0,
+    unapprovedAssessments: 0,
+    avgReadmissionRisk: 0,
+    highRiskPatients: 0,
+    ...currentStats // This will override defaults with actual values when available
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <AnimatePresence>
@@ -19,12 +27,12 @@ const StatsSection = ({ stats, isLoaded, changes = {} }) => {
               changePercentage={changes.totalPatients}
             />
             <StatsCard 
-              title="Pending Assessments" 
-              value={stats.pendingAssessments} 
+              title="Unapproved Assessments" 
+              value={stats.unapprovedAssessments} 
               icon={<ClipboardIcon />}
               color="amber" 
               delay={0.2}
-              changePercentage={changes.pendingAssessments}
+              changePercentage={changes.unapprovedAssessments}
             />
             <StatsCard 
               title="Avg. Readmission Risk" 

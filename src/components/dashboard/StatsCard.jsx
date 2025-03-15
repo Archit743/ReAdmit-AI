@@ -2,9 +2,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const StatsCard = ({ title, value, icon, color, delay, changePercentage = null }) => {
+const StatsCard = ({ title, value, icon, color, delay, change = null }) => {
   // Default to 0% change if not provided
-  const percentage = changePercentage || 0;
+  const percentage = change !== null ? Number(change) : 0;
   const isPositive = percentage >= 0;
   
   const colorMappings = {
