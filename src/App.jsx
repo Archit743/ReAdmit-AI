@@ -6,6 +6,7 @@ import ResultsPage from './pages/ResultsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import ScrollToTop from './components/utils/ScrollToTop.js';
 
 function App() {
   const { isAuthenticated } = useSelector(state => state.auth || { isAuthenticated: false });
@@ -13,6 +14,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Public routes */}
         <Route 
