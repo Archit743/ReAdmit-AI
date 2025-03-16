@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
 import StatsSection from './StatsSection';
 import ActivitySection from './ActivitySection';
+import QuickStartSection from './altFeatureFiles/QuickstartSection';
+import SystemStatusSection from './altFeatureFiles/SystemStatusSection';
+import UpdatesSection from './altFeatureFiles/UpdatesSection';
 import RiskTrendSection from './RiskTrendSection';
 import QuickActionsSection from './QuickActionsSection';
 import { fetchPatientRecords, fetchWeeklyStats, setMockWeeklyStats } from '../../features/patientSlice';
@@ -150,6 +153,9 @@ const Dashboard = ({ onGenerateEntry }) => {
         
         {/* Recent Activity section */}
         <ActivitySection />
+        {/* <QuickStartSection /> */}
+        {/* <SystemStatusSection /> */}
+        {/* <UpdatesSection /> */}
 
         {/* Additional sections */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

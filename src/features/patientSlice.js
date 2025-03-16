@@ -365,10 +365,10 @@ const patientSlice = createSlice({
         state.loading = true;
       })
       // In extraReducers section of patientSlice.js
-.addCase(updatePatientApprovalStatus.fulfilled, (state, action) => {
-  state.loading = false;
-  const { patientId, isApproved, approvedAt, approvedBy } = action.payload;
-  
+      .addCase(updatePatientApprovalStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        const { patientId, isApproved, approvedAt, approvedBy } = action.payload;
+        
   // Update current patient if it matches
   if (state.currentPatient && (state.currentPatient.id === patientId || state.currentPatient._id === patientId)) {
     state.currentPatient.isApproved = isApproved;

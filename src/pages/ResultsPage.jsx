@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generatePrediction } from '../features/patientSlice'; // Removed fetchPatientById if not needed
 
 // Importing modular components
 import PatientSummary from '../components/PatientSummary';
@@ -16,19 +17,38 @@ const ResultsPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoaded, setIsLoaded] = useState(false);
   
+  const dispatch = useDispatch();
   const patient = useSelector(state => state.patient.currentPatient);
   const prediction = useSelector(state => state.patient.predictionResult);
+  const loading = useSelector(state => state.patient.loading);
+
+  // Fetch prediction when patient changes and no prediction exists
+  useEffect(() => {
+    if (patient && !prediction) {
+      dispatch(generatePrediction(patient));
+    }
+  }, [patient, prediction, dispatch]);
 
   useEffect(() => {
-    setIsLoaded(true);
-  }, []);
+    if (patient && !loading) {
+      setIsLoaded(true);
+    }
+  }, [patient, loading]);
 
-  // Handle the case when there's no data yet
-  if (!patient || !prediction) {
+  // Handle loading and no-patient cases
+  if (!patient && loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-950 p-6 flex items-center justify-center">
+        <div className="text-white">Loading patient data...</div>
+      </div>
+    );
+  }
+
+  if (!patient) {
     return <NoResults />;
   }
 
-  // CSS for autofill styles (matching login page)
+  // CSS for autofill styles (unchanged)
   const autofillStyle = `
     input:-webkit-autofill,
     input:-webkit-autofill:hover,
@@ -40,11 +60,56 @@ const ResultsPage = () => {
     }
   `;
 
+  // Calculate risk percentage (unchanged)
+  const getRiskPercentage = () => {
+    if (patient?.readmissionRisk && !isNaN(parseInt(patient.readmissionRisk))) {
+      return parseInt(patient.readmissionRisk);
+    }
+    if (prediction?.riskPercentage) {
+      return prediction.riskPercentage;
+    }
+    const age = patient?.age || 0;
+    const previousAdmissions = patient?.previousAdmissions || 0;
+    const lengthOfStay = patient?.lengthOfStay || 0;
+    let risk = 0;
+    if (age > 65) risk += 20;
+    else if (age > 50) risk += 10;
+    if (previousAdmissions > 2) risk += 20;
+    else if (previousAdmissions > 0) risk += 10;
+    if (lengthOfStay > 10) risk += 20;
+    else if (lengthOfStay > 5) risk += 10;
+    return Math.min(risk, 100);
+  };
+
+  // Get number of comorbidities (unchanged)
+  const getComorbidityCount = () => {
+    if (patient?.comorbidities && Array.isArray(patient.comorbidities)) {
+      return patient.comorbidities.length;
+    }
+    if (patient?.medicalHistory) {
+      return patient.medicalHistory.split(',').filter(item => item.trim()).length;
+    }
+    return 0;
+  };
+
+  // Get days until readmission risk peaks (unchanged)
+  const getDaysUntilRisk = () => {
+    if (prediction?.daysUntilRisk) {
+      return prediction.daysUntilRisk;
+    }
+    const los = patient?.lengthOfStay || 0;
+    if (los > 10) return 14;
+    if (los > 5) return 21;
+    return 30;
+  };
+
+  const riskPercentage = getRiskPercentage();
+
+  // Render the UI (unchanged below this point)
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-950 p-6">
       <style>{autofillStyle}</style>
-      
-      {/* Background color blobs for visual interest - matching login page */}
+      {/* Background color blobs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-600 rounded-full filter blur-3xl opacity-20"></div>
         <div className="absolute top-40 -left-40 w-80 h-80 bg-purple-600 rounded-full filter blur-3xl opacity-20"></div>
@@ -57,7 +122,7 @@ const ResultsPage = () => {
         transition={{ duration: 0.6 }}
         className="max-w-7xl mx-auto space-y-8 relative z-10"
       >
-        {/* Header with glassmorphism effect - matching login page styling */}
+        {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -79,7 +144,7 @@ const ResultsPage = () => {
                   Patient Results
                 </h1>
                 <p className="text-gray-400 text-sm">
-                  Patient ID: {patient.id} • Last Updated: {new Date().toLocaleDateString()}
+                  Patient ID: {patient.patientId || patient.id || patient._id} • Last Updated: {new Date(patient.updatedAt || patient.date || Date.now()).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -114,23 +179,23 @@ const ResultsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatsCard 
                 title="Readmission Risk" 
-                value={`${prediction.riskPercentage}%`} 
+                value={`${riskPercentage}%`} 
                 icon={<RiskIcon />}
-                color={prediction.riskPercentage > 50 ? "red" : prediction.riskPercentage > 30 ? "amber" : "green"}
+                color={riskPercentage > 50 ? "red" : riskPercentage > 30 ? "amber" : "green"}
                 delay={0.1}
-                detail={`${prediction.riskPercentage > 50 ? "High" : prediction.riskPercentage > 30 ? "Medium" : "Low"} risk level`}
+                detail={`${riskPercentage > 50 ? "High" : riskPercentage > 30 ? "Medium" : "Low"} risk level`}
               />
               <StatsCard 
                 title="Length of Stay" 
-                value={`${patient.lastStayDays} days`} 
+                value={`${patient.lengthOfStay || 0} days`} 
                 icon={<CalendarIcon />}
                 color="blue" 
                 delay={0.2}
-                detail={`${patient.lastStayDays > 7 ? "Above" : "Below"} average`}
+                detail={`${(patient.lengthOfStay || 0) > 7 ? "Above" : "Below"} average`}
               />
               <StatsCard 
                 title="Comorbidities" 
-                value={patient.comorbidities?.length || 0} 
+                value={getComorbidityCount()} 
                 icon={<ClipboardIcon />}
                 color="purple" 
                 delay={0.3}
@@ -138,7 +203,7 @@ const ResultsPage = () => {
               />
               <StatsCard 
                 title="Readmission Timeline" 
-                value={`${prediction.daysUntilRisk || 30} days`} 
+                value={`${getDaysUntilRisk()} days`} 
                 icon={<ClockIcon />}
                 color="amber" 
                 delay={0.4}
@@ -185,7 +250,7 @@ const ResultsPage = () => {
             </div>
           </div>
           
-          {/* Tab content with enhanced transitions */}
+          {/* Tab content */}
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -197,7 +262,6 @@ const ResultsPage = () => {
             >
               {activeTab === 'overview' && (
                 <div className="space-y-8">
-                  {/* Patient summary in a glassmorphic container */}
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3 mb-4">
                       <IconWrapper color="blue">
@@ -207,10 +271,8 @@ const ResultsPage = () => {
                       </IconWrapper>
                       <SectionTitle>Patient Summary</SectionTitle>
                     </div>                  
-                        <PatientSummary patient={patient} />
+                    <PatientSummary patient={patient} />
                   </div>
-                  
-                  {/* Risk Assesment visualization */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
@@ -221,17 +283,14 @@ const ResultsPage = () => {
                         </IconWrapper>
                         <SectionTitle>Risk Assessment</SectionTitle>
                       </div>
-                      
                     </div>
-                    
-                        <RiskFactors 
-                          patient={patient} 
-                          showDetails={showDetails} 
-                          setShowDetails={setShowDetails} 
-                        />
+                    <RiskFactors 
+                      patient={patient} 
+                      showDetails={showDetails} 
+                      setShowDetails={setShowDetails} 
+                      riskPercentage={riskPercentage}
+                    />
                   </div>
-                  
-                  {/* Recommendations section */}
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3 mb-4">
                       <IconWrapper color="green">
@@ -241,35 +300,48 @@ const ResultsPage = () => {
                       </IconWrapper>
                       <SectionTitle>Recommendations</SectionTitle>
                     </div>
-                    <Recommendations prediction={prediction} />
+                    <Recommendations 
+                      prediction={prediction || { 
+                        readmissionRisk: riskPercentage, 
+                        daysUntilRisk: getDaysUntilRisk(),
+                        recommendations: ["Follow-up appointment within two weeks", "Review medication adherence", "Schedule diagnostic tests"]
+                      }} 
+                      patient={patient}
+                    />
                   </div>
                 </div>
               )}
-              
               {activeTab === 'treatment' && (
-                    <TreatmentTimeline patient={patient} prediction={prediction} />
-                
+                <TreatmentTimeline 
+                  patient={patient} 
+                  prediction={prediction || { readmissionRisk: riskPercentage }}
+                />
               )}
-              
               {activeTab === 'followup' && (
-                <FollowUpScheduler patient={patient} prediction={prediction} />
+                <FollowUpScheduler 
+                  patient={patient} 
+                  prediction={prediction || { readmissionRisk: riskPercentage }}
+                />
               )}
             </motion.div>
           </AnimatePresence>
         </motion.div>
         
-        {/* Actions footer with enhanced styling */}
+        {/* Actions footer */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
           className="backdrop-blur-lg bg-white/8 border border-white/10 rounded-2xl shadow-2xl p-7"
         >
-          <ActionFooter patient={patient} prediction={prediction} />
+          <ActionFooter 
+            patient={patient} 
+            prediction={prediction || { readmissionRisk: riskPercentage }}
+          />
         </motion.div>
       </motion.div>
       
-      {/* Page Footer with indicator dots - matching login page */}
+      {/* Page Footer */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

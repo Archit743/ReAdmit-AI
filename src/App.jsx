@@ -1,25 +1,16 @@
 import './App.css'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import HomePage from './pages/Homepage.jsx'
 import ResultsPage from './pages/ResultsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ScrollToTop from './components/utils/ScrollToTop.js';
-import { verifyToken } from './features/authSlice.js'; // You'll need to create this thunk
 
 function App() {
-  const { isAuthenticated, token } = useSelector(state => state.auth || { isAuthenticated: false, token: null });
-  const dispatch = useDispatch();
-  
-  useEffect(() => {
-    // If there's a token, verify it's still valid
-    if (token) {
-      dispatch(verifyToken());
-    }
-  }, [dispatch, token]);
+  const { isAuthenticated } = useSelector(state => state.auth || { isAuthenticated: false });
+
 
   return (
     <Router>

@@ -219,10 +219,9 @@ const ActionFooter = ({ patient, prediction }) => {
       setApproveSuccess(true);
       
       setTimeout(() => {
-        setApproveSuccess(false); 
-        // Note: Don't reset isApproved here
+        setApproveSuccess(false);
       }, 3000);
-
+      
     } catch (error) {
       console.error('Error approving plan:', error);
       alert('Failed to approve plan. Please try again.');
