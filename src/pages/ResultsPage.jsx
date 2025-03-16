@@ -60,7 +60,7 @@ const ResultsPage = () => {
     }
   `;
 
-  // Calculate risk percentage (unchanged)
+  // Calculate risk percentage
   const getRiskPercentage = () => {
     if (patient?.readmissionRisk && !isNaN(parseInt(patient.readmissionRisk))) {
       return parseInt(patient.readmissionRisk);
@@ -304,7 +304,6 @@ const ResultsPage = () => {
                       prediction={prediction || { 
                         readmissionRisk: riskPercentage, 
                         daysUntilRisk: getDaysUntilRisk(),
-                        recommendations: ["Follow-up appointment within two weeks", "Review medication adherence", "Schedule diagnostic tests"]
                       }} 
                       patient={patient}
                     />

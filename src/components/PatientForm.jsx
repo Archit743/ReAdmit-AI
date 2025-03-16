@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { setPatientData, addPatientRecord, setPredictionResult, savePatientRecord } from "../features/patientSlice";
+import { setPatientData, addPatientRecord, setPredictionResult, savePatientRecord, generatePrediction } from "../features/patientSlice";
 import { motion } from "framer-motion";
 import FormSection from "./FormSection";
 import TextInput from "./inputs/TextInput";
@@ -12,6 +12,7 @@ import FileUploadSection from "./FileUploadSection";
 const PatientForm = ({ onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const error = useSelector(state => state.patient.error);
   const [isLoading, setIsLoading] = useState(false);
   const [patientInfo, setPatientInfo] = useState({
     patientId: `PT-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -51,29 +52,45 @@ const PatientForm = ({ onClose }) => {
     setIsLoading(true);
 
     try {
+      // Create the patient record first
       const newPatient = { 
         ...patientInfo, 
         fileUrls,
-        id: patientInfo.patientId, // No timestamp appended
+        id: patientInfo.patientId,
         diagnosis: patientInfo.primaryDiagnosis,
         date: new Date().toLocaleDateString(),
-        readmissionRisk: "Unknown"
+        readmissionRisk: "Unknown" // Will be updated after prediction
       };
       
-
+      // Save the patient data in the Redux store
       dispatch(setPatientData(newPatient));
       dispatch(savePatientRecord(newPatient));
       dispatch(addPatientRecord(newPatient));
       
-      // Simulate fetching prediction result
-      const hardcodedPrediction = {
-        readmissionRisk: "Medium",
-        probability: 0.65,
+      // Prepare the data for the prediction model
+      const predictionData = {
+        age: parseInt(patientInfo.age),
+        gender: patientInfo.gender === "Male" ? 1 : 0,
+        lengthOfStay: parseInt(patientInfo.lengthOfStay),
+        previousAdmissions: parseInt(patientInfo.previousAdmissions),
+        // Add any other fields your model expects
+        // You may need to transform medical history, diagnoses, etc.
+        // into formats your model understands
       };
-
-      dispatch(setPredictionResult(hardcodedPrediction));
-      navigate("/results");
-      onClose();
+      
+      // Dispatch the prediction request
+      const resultAction = await dispatch(generatePrediction(predictionData));
+      
+      // Check if the prediction was successful
+      if (generatePrediction.fulfilled.match(resultAction)) {
+        // Navigate to results page
+        navigate("/results");
+        onClose();
+      } else {
+        // Handle prediction failure
+        console.error("Prediction failed:", resultAction.error);
+        alert("Failed to generate readmission risk prediction. Please try again.");
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
       alert("An error occurred. Please try again.");
@@ -88,7 +105,13 @@ const PatientForm = ({ onClose }) => {
   const sectionHeaderStyle = "px-4 py-2 bg-white/5 border-b border-white/10 text-sm font-medium text-gray-300";
 
   return (
+    
     <div className="bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-950 rounded-2xl shadow-2xl border border-white/10 backdrop-blur-lg p-7 w-full mx-auto">
+      {error && (
+  <div className="error-message text-blue-200 bg-red-500 p-3 rounded-lg mb-4">
+    Error: {error}
+  </div>
+)}
       <style>{autofillStyle}</style>
       <motion.div 
         initial={{ opacity: 0, y: 10 }}

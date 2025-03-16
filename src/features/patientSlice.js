@@ -66,6 +66,136 @@ export const fetchWeeklyStats = createAsyncThunk(
   }
 );
 
+export const fetchRecommendations = createAsyncThunk(
+  'patient/fetchRecommendations',
+  async (recommendationData, { getState, rejectWithValue }) => {
+    try {
+      const { patientData, prediction } = recommendationData;
+      
+      // Parse risk values properly - convert to number if needed
+      const riskValue = typeof prediction.readmissionRisk === 'number' 
+        ? prediction.readmissionRisk 
+        : parseFloat(prediction.readmissionRisk);
+      
+      // Determine risk category
+      const getRiskCategory = (value) => {
+        if (value >= 50) return 'high';
+        if (value >= 30) return 'medium';
+        return 'low';
+      };
+      
+      const riskCategory = getRiskCategory(riskValue);
+      
+      // Prepare the payload
+      const payload = {
+        riskCategory,
+        riskValue,
+        patientData
+      };
+      
+      // Make the API call
+      const { auth } = getState();
+      const response = await fetchWithAuth(`${API_URL}/recommendations`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }, getState);
+      
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch recommendations:', error);
+      
+      // In development, use mock data
+      if (process.env.NODE_ENV === 'development') {
+        // Determine risk category
+        const riskValue = typeof recommendationData.prediction.readmissionRisk === 'number' 
+          ? recommendationData.prediction.readmissionRisk 
+          : parseFloat(recommendationData.prediction.readmissionRisk);
+        
+        const getRiskCategory = (value) => {
+          if (value >= 50) return 'high';
+          if (value >= 30) return 'medium';
+          return 'low';
+        };
+        
+        const riskCategory = getRiskCategory(riskValue);
+        
+        // Return mock data based on risk category
+        let recommendations = [];
+        
+        if (riskCategory === 'high') {
+          recommendations = [
+            {
+              text: "Schedule follow-up appointment within 2 weeks of discharge",
+              category: "Follow-up Care"
+            },
+            {
+              text: "Connect patient with care coordinator for transition support",
+              category: "Care Coordination"
+            },
+            {
+              text: "Review medication adherence plan with patient and caregiver",
+              category: "Medication Management"
+            },
+            {
+              text: "Consider home health services assessment",
+              category: "Home Care"
+            },
+            {
+              text: "Monitor vital signs daily for first week post-discharge",
+              category: "Monitoring"
+            }
+          ];
+        } else if (riskCategory === 'medium') {
+          recommendations = [
+            {
+              text: "Schedule follow-up appointment within 30 days",
+              category: "Follow-up Care"
+            },
+            {
+              text: "Medication adherence monitoring recommended",
+              category: "Medication Management"
+            },
+            {
+              text: "Provide detailed discharge instructions with warning signs",
+              category: "Patient Education"
+            },
+            {
+              text: "Consider telehealth check-in at 2 weeks post-discharge",
+              category: "Remote Care"
+            }
+          ];
+        } else {
+          recommendations = [
+            {
+              text: "Standard follow-up protocols recommended",
+              category: "Follow-up Care"
+            },
+            {
+              text: "Provide routine discharge instructions",
+              category: "Patient Education"
+            },
+            {
+              text: "Patient education on healthy lifestyle maintenance",
+              category: "Lifestyle"
+            }
+          ];
+        }
+        
+        return { 
+          recommendations,
+          metadata: {
+            riskCategory,
+            riskValue,
+            generatedAt: new Date().toISOString()
+          }
+        };
+      }
+      
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const fetchPatientRecords = createAsyncThunk(
   'patient/fetchPatientRecords',
   async (_, { getState, rejectWithValue }) => {
@@ -120,15 +250,51 @@ export const generatePrediction = createAsyncThunk(
   'patient/generatePrediction',
   async (patientData, { getState, rejectWithValue }) => {
     try {
-      return await fetchWithAuth(`${API_URL}/predictions`, {
+      // Use a different URL specifically for the prediction endpoint
+      const FLASK_API_URL = 'http://localhost:5001';
+      
+      const { auth } = getState();
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${auth.token}`,
+      };
+      
+      // Format patient data as needed by your Flask model
+      const formattedData = formatPatientDataForModel(patientData);
+      
+      const response = await fetch(`${FLASK_API_URL}/api/predict`, {
         method: 'POST',
-        body: JSON.stringify(patientData),
-      }, getState);
+        headers,
+        body: JSON.stringify(formattedData),
+      });
+      
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Prediction request failed');
+      
+      return data;
     } catch (error) {
+      console.error('Prediction error:', error);
       return rejectWithValue(error.message);
     }
   }
 );
+
+// Helper function to format patient data for the ML model
+function formatPatientDataForModel(patientData) {
+  // Transform the patient data into the format expected by your ML model
+  // This depends on your model's expected input format
+  
+  const modelInput = {
+    // Example mapping - adjust based on your actual model input requirements
+    age: patientData.age,
+    gender: patientData.gender === 'Male' ? 1 : 0,
+    diagnosis: patientData.diagnosisCode,
+    los: patientData.lengthOfStay,
+    // Add all required fields for your model
+  };
+  
+  return modelInput;
+}
 
 export const updatePatientApprovalStatus = createAsyncThunk(
   'patient/updatePatientApprovalStatus',
@@ -369,32 +535,45 @@ const patientSlice = createSlice({
         state.loading = false;
         const { patientId, isApproved, approvedAt, approvedBy } = action.payload;
         
-  // Update current patient if it matches
-  if (state.currentPatient && (state.currentPatient.id === patientId || state.currentPatient._id === patientId)) {
-    state.currentPatient.isApproved = isApproved;
-    state.currentPatient.approvedAt = approvedAt;
-    state.currentPatient.approvedBy = approvedBy;
-  }
-  
-  // Update in records array
-  const patientIndex = state.patientRecords.findIndex(p => p._id === patientId || p.id === patientId);
-  if (patientIndex !== -1) {
-    state.patientRecords[patientIndex].isApproved = isApproved;
-    state.patientRecords[patientIndex].approvedAt = approvedAt;
-    state.patientRecords[patientIndex].approvedBy = approvedBy;
-  }
-  
-  // Update weekly stats if they exist
-  if (state.weeklyStats && state.weeklyStats.currentWeek) {
-    // Recalculate unapproved assessments count
-    const unapprovedCount = state.patientRecords.filter(patient => patient.isApproved === false).length;
-    state.weeklyStats.currentWeek.unapprovedAssessments = unapprovedCount;
-  }
-  
-  state.error = null;
-})
-  },
-});
+        // Update current patient if it matches
+        if (state.currentPatient && (state.currentPatient.id === patientId || state.currentPatient._id === patientId)) {
+          state.currentPatient.isApproved = isApproved;
+          state.currentPatient.approvedAt = approvedAt;
+          state.currentPatient.approvedBy = approvedBy;
+        }
+        
+        // Update in records array
+        const patientIndex = state.patientRecords.findIndex(p => p._id === patientId || p.id === patientId);
+        if (patientIndex !== -1) {
+          state.patientRecords[patientIndex].isApproved = isApproved;
+          state.patientRecords[patientIndex].approvedAt = approvedAt;
+          state.patientRecords[patientIndex].approvedBy = approvedBy;
+        }
+        
+        // Update weekly stats if they exist
+        if (state.weeklyStats && state.weeklyStats.currentWeek) {
+          // Recalculate unapproved assessments count
+          const unapprovedCount = state.patientRecords.filter(patient => patient.isApproved === false).length;
+          state.weeklyStats.currentWeek.unapprovedAssessments = unapprovedCount;
+        }
+        
+        state.error = null;
+      })
+      // Then add to your extraReducers
+      .addCase(fetchRecommendations.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchRecommendations.fulfilled, (state, action) => {
+        state.loading = false;
+        state.recommendations = action.payload.recommendations;
+        state.error = null;
+      })
+      .addCase(fetchRecommendations.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+    },
+  })
 
 export const {
   setPatientData,
