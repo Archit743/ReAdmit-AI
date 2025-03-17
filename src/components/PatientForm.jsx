@@ -69,13 +69,7 @@ const PatientForm = ({ onClose }) => {
       
       // Prepare the data for the prediction model
       const predictionData = {
-        age: parseInt(patientInfo.age),
-        gender: patientInfo.gender === "Male" ? 1 : 0,
-        lengthOfStay: parseInt(patientInfo.lengthOfStay),
-        previousAdmissions: parseInt(patientInfo.previousAdmissions),
-        // Add any other fields your model expects
-        // You may need to transform medical history, diagnoses, etc.
-        // into formats your model understands
+        fileUrls: fileUrls
       };
       
       // Dispatch the prediction request
@@ -88,8 +82,9 @@ const PatientForm = ({ onClose }) => {
         onClose();
       } else {
         // Handle prediction failure
-        console.error("Prediction failed:", resultAction.error);
-        alert("Failed to generate readmission risk prediction. Please try again.");
+        const errorMessage = resultAction.error?.message || "Unknown error occurred";
+      console.error("Prediction failed:", errorMessage);
+      alert(`Failed to generate readmission risk prediction: ${errorMessage}`);
       }
     } catch (error) {
       console.error("Error submitting form:", error);
