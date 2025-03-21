@@ -152,10 +152,10 @@ const Dashboard = ({ onGenerateEntry }) => {
         )}
         
         {/* Recent Activity section */}
-        <ActivitySection />
-        {/* <QuickStartSection /> */}
+        {/* <ActivitySection /> */}
+        <QuickStartSection />
         {/* <SystemStatusSection /> */}
-        {/* <UpdatesSection /> */}
+        <UpdatesSection />
 
         {/* Additional sections */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
