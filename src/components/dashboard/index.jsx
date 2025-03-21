@@ -78,7 +78,7 @@ const Dashboard = ({ onGenerateEntry }) => {
       
       // Count high risk patients (risk > 70%)
       const highRiskPatients = patientRecords.filter(
-        patient => patient.readmissionRisk && parseFloat(patient.readmissionRisk) > 70
+        patient => patient.readmissionRisk && parseFloat(patient.readmissionRisk) > 30
       ).length;
       
       setStats({

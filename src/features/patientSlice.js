@@ -280,7 +280,7 @@ export const generatePrediction = createAsyncThunk(
         const mockRisk = (30 + (urlHash % 50)).toFixed(2); // Range between 30-80
         
         return {
-          readmissionRisk: mockRisk.toFixed(1),
+          readmissionRisk: mockRisk.toFixed(2),
           success: true
         };
       }
@@ -486,7 +486,7 @@ const patientSlice = createSlice({
       })
       .addCase(generatePrediction.fulfilled, (state, action) => {
         state.loading = false;
-        const formattedResult = parseFloat(action.payload.readmissionRisk).toFixed(1);
+        const formattedResult = parseFloat(action.payload.readmissionRisk).toFixed(2);
         state.predictionResult = {
           readmissionRisk: formattedResult,
           success: action.payload.success
