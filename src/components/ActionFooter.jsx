@@ -78,9 +78,41 @@ const ActionFooter = ({ patient, prediction }) => {
     return colorMap[color] || colorMap.blue;
   };
 
+    // Get risk level and color based on risk score
+    const getRiskLevelAndColor = (riskScore) => {
+      const score = parseFloat(riskScore);
+      if (score >= 50) return { level: 'High', color: 'red' };
+      if (score >= 30) return { level: 'Medium', color: 'orange' };
+      return { level: 'Low', color: 'green' };
+    };
+  
+    // Format date for better readability
+    const formatDate = (dateString) => {
+      if (!dateString) return 'N/A';
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
   // Print report function
   const handlePrintReport = () => {
     setIsPrinting(true);
+    
+    // Safely access values with fallbacks to prevent 'Unknown' values
+    const patientName = patient?.name || 'N/A';
+    const patientId = patient?.id || patient?._id || 'N/A';
+    const dateOfBirth = patient?.dateOfBirth ? formatDate(patient?.dateOfBirth) : 'N/A';
+    const riskScore = prediction?.readmissionRisk || prediction?.riskScore || 'N/A';
+    const patientGender = patient?.gender || 'N/A';
+    const patientAge = patient?.age || 'N/A';
+    
+    // Get risk level and color
+    const { level: riskLevel, color: riskColor } = getRiskLevelAndColor(riskScore);
+    
+    // Check if we have recommendations
+    const hasRecommendations = prediction?.recommendations && prediction.recommendations.length > 0;
     
     // Create a hidden iframe for printing
     const printFrame = document.createElement('iframe');
@@ -92,32 +124,148 @@ const ActionFooter = ({ patient, prediction }) => {
     printFrame.contentDocument.write(`
       <html>
         <head>
-          <title>Patient Report</title>
+          <title>Patient Readmission Risk Report</title>
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; }
-            h1 { color: #333; }
-            .report-container { max-width: 800px; margin: 0 auto; padding: 20px; }
-            .patient-info { margin-bottom: 20px; }
-            .prediction-info { margin-bottom: 20px; }
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              margin: 0;
+              padding: 0;
+            }
+            .report-container {
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .header {
+              text-align: center;
+              padding-bottom: 20px;
+              border-bottom: 2px solid #ddd;
+              margin-bottom: 20px;
+            }
+            h1 {
+              color: #2c3e50;
+              margin-bottom: 10px;
+            }
+            h2 {
+              color: #3498db;
+              border-bottom: 1px solid #eee;
+              padding-bottom: 5px;
+              margin-top: 20px;
+            }
+            .patient-info {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 15px;
+              margin-bottom: 25px;
+            }
+            .info-item {
+              margin-bottom: 8px;
+            }
+            .label {
+              font-weight: bold;
+              display: inline-block;
+              min-width: 120px;
+            }
+            .risk-score {
+              font-size: 1.2em;
+              padding: 10px;
+              border-radius: 5px;
+              margin: 15px 0;
+              display: inline-block;
+            }
+            .high-risk {
+              background-color: #ffebee;
+              color: #c62828;
+              border-left: 4px solid #c62828;
+            }
+            .medium-risk {
+              background-color: #fff8e1;
+              color: #ff8f00;
+              border-left: 4px solid #ff8f00;
+            }
+            .low-risk {
+              background-color: #e8f5e9;
+              color: #2e7d32;
+              border-left: 4px solid #2e7d32;
+            }
+            .recommendations {
+              margin: 20px 0;
+            }
+            .recommendation-item {
+              padding: 8px 0;
+              border-bottom: 1px dotted #eee;
+            }
+            .recommendation-category {
+              font-style: italic;
+              color: #7f8c8d;
+              margin-left: 5px;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 15px;
+              border-top: 1px solid #ddd;
+              font-size: 0.9em;
+              color: #7f8c8d;
+            }
+            .disclaimer {
+              font-style: italic;
+              margin-top: 10px;
+            }
+            @media print {
+              body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .header, .footer {
+                position: relative;
+              }
+            }
           </style>
         </head>
         <body>
           <div class="report-container">
-            <h1>Patient Medical Report</h1>
+            <div class="header">
+              <h1>Patient Readmission Risk Assessment</h1>
+              <p>Generated on ${new Date().toLocaleString()}</p>
+            </div>
+            
+            <h2>Patient Information</h2>
             <div class="patient-info">
-              <h2>Patient Information</h2>
-              <p><strong>Name:</strong> ${patient?.name || 'Unknown'}</p>
-              <p><strong>ID:</strong> ${patient?.id || 'Unknown'}</p>
-              <p><strong>DOB:</strong> ${patient?.dateOfBirth || 'Unknown'}</p>
+              <div class="info-item"><span class="label">ID:</span> ${patientId}</div>
+              <div class="info-item"><span class="label">Gender:</span> ${patientGender}</div>
+              <div class="info-item"><span class="label">Age:</span> ${patientAge}</div>
             </div>
-            <div class="prediction-info">
-              <h2>Prediction Results</h2>
-              <p><strong>Summary:</strong> ${prediction?.summary || 'No prediction available'}</p>
-              <p><strong>Risk Score:</strong> ${prediction?.riskScore || 'N/A'}</p>
-              <p><strong>Recommendations:</strong> ${prediction?.recommendations || 'None provided'}</p>
+            
+            <h2>Risk Assessment Results</h2>
+            <div class="info-item">
+              <div class="risk-score ${riskColor === 'red' ? 'high-risk' : riskColor === 'orange' ? 'medium-risk' : 'low-risk'}">
+                <span class="label">Readmission Risk:</span> ${riskScore}% (${riskLevel} Risk)
+              </div>
             </div>
+            
+            ${prediction?.summary ? `
+            <div class="info-item">
+              <span class="label">Summary:</span>
+              <p>${prediction.summary}</p>
+            </div>
+            ` : ''}
+            
+            ${hasRecommendations ? `
+            <h2>Clinical Recommendations</h2>
+            <div class="recommendations">
+              ${prediction.recommendations.map(rec => `
+                <div class="recommendation-item">
+                  ${rec.text || rec} ${rec.category ? `<span class="recommendation-category">(${rec.category})</span>` : ''}
+                </div>
+              `).join('')}
+            </div>
+            ` : ''}
+            
             <div class="footer">
-              <p>Report generated on ${new Date().toLocaleString()}</p>
+              <p>Report generated by Hospital Readmission Risk Assessment Tool</p>
+              <p class="disclaimer">This assessment is a clinical decision support tool and should be used in conjunction with clinical judgment. It does not replace the need for proper clinical evaluation.</p>
             </div>
           </div>
         </body>
@@ -126,21 +274,21 @@ const ActionFooter = ({ patient, prediction }) => {
     printFrame.contentDocument.close();
     
     // Print and remove the iframe
-    printFrame.contentWindow.focus();
-    printFrame.contentWindow.print();
-    
-    // Also trigger the main window print event for the afterprint listener
-    window.dispatchEvent(new Event('afterprint'));
-    
-    // Reset the printing state
     setTimeout(() => {
+      printFrame.contentWindow.focus();
+      printFrame.contentWindow.print();
+      
+      // Trigger the main window print event for the afterprint listener
+      window.dispatchEvent(new Event('afterprint'));
+      
+      // Reset the printing state
       setIsPrinting(false);
+      
+      // Remove iframe after printing
+      setTimeout(() => {
+        document.body.removeChild(printFrame);
+      }, 1000);
     }, 500);
-    
-    // Remove iframe after printing
-    setTimeout(() => {
-      document.body.removeChild(printFrame);
-    }, 1000);
   };
 
   // Share function
