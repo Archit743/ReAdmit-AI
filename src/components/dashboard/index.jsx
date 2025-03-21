@@ -154,7 +154,6 @@ const Dashboard = ({ onGenerateEntry }) => {
         {/* Recent Activity section */}
         {/* <ActivitySection /> */}
         <QuickStartSection />
-        {/* <SystemStatusSection /> */}
         <UpdatesSection />
 
         {/* Additional sections */}
@@ -162,6 +161,7 @@ const Dashboard = ({ onGenerateEntry }) => {
           <RiskTrendSection />
           <QuickActionsSection />
         </div>
+        <SystemStatusSection />
       </motion.div>
     </div>
   );
