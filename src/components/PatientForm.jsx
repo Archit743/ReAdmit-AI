@@ -50,7 +50,7 @@ const PatientForm = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-
+  
     try {
       // Create the patient record first
       const newPatient = { 
@@ -64,8 +64,6 @@ const PatientForm = ({ onClose }) => {
       
       // Save the patient data in the Redux store
       dispatch(setPatientData(newPatient));
-      dispatch(savePatientRecord(newPatient));
-      dispatch(addPatientRecord(newPatient));
       
       // Prepare the data for the prediction model
       const predictionData = {
@@ -77,14 +75,25 @@ const PatientForm = ({ onClose }) => {
       
       // Check if the prediction was successful
       if (generatePrediction.fulfilled.match(resultAction)) {
+        // The prediction result is now stored in the current patient
+        // Now save the patient record with the prediction result
+        const currentPatientWithPrediction = {
+          ...newPatient,
+          readmissionRisk: resultAction.payload.readmissionRisk
+        };
+        
+        // Save to backend and add to records list
+        await dispatch(savePatientRecord(currentPatientWithPrediction));
+        dispatch(addPatientRecord(currentPatientWithPrediction));
+        
         // Navigate to results page
         navigate("/results");
         onClose();
       } else {
         // Handle prediction failure
         const errorMessage = resultAction.error?.message || "Unknown error occurred";
-      console.error("Prediction failed:", errorMessage);
-      alert(`Failed to generate readmission risk prediction: ${errorMessage}`);
+        console.error("Prediction failed:", errorMessage);
+        alert(`Failed to generate readmission risk prediction: ${errorMessage}`);
       }
     } catch (error) {
       console.error("Error submitting form:", error);
