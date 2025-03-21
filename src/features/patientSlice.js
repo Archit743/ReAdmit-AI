@@ -277,7 +277,7 @@ export const generatePrediction = createAsyncThunk(
         
         // Create a deterministic but random-looking risk score based on fileUrls
         const urlHash = predictionData.fileUrls.join('').length;
-        const mockRisk = 30 + (urlHash % 50); // Range between 30-80
+        const mockRisk = (30 + (urlHash % 50)).toFixed(2); // Range between 30-80
         
         return {
           readmissionRisk: mockRisk.toFixed(1),
@@ -390,9 +390,14 @@ const patientSlice = createSlice({
       state.currentPatient = action.payload;
     },
     setPredictionResult: (state, action) => {
-      state.predictionResult = action.payload;
+      // Format the risk value to have two decimal places
+      const formattedRisk = parseFloat(action.payload.readmissionRisk).toFixed(2);
+      state.predictionResult = {
+        ...action.payload,
+        readmissionRisk: formattedRisk
+      };
       if (state.currentPatient) {
-        state.currentPatient.readmissionRisk = action.payload.readmissionRisk;
+        state.currentPatient.readmissionRisk = formattedRisk;
       }
     },
     addPatientRecord: (state, action) => {
@@ -481,12 +486,13 @@ const patientSlice = createSlice({
       })
       .addCase(generatePrediction.fulfilled, (state, action) => {
         state.loading = false;
+        const formattedResult = parseFloat(action.payload.readmissionRisk).toFixed(1);
         state.predictionResult = {
-          readmissionRisk: action.payload.readmissionRisk,
+          readmissionRisk: formattedResult,
           success: action.payload.success
         };
         if (state.currentPatient) {
-          state.currentPatient.readmissionRisk = action.payload.readmissionRisk;
+          state.currentPatient.readmissionRisk = formattedResult;
         }
         state.error = null;
       })

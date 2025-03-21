@@ -350,7 +350,7 @@ const RecordsList = () => {
                   </div>
                   <div className="flex items-center">
                     <div className={`px-3 py-1 rounded-full text-xs font-medium mr-3 ${getRiskColorClass(record.readmissionRisk)}`}>
-                      {record.readmissionRisk || "N/A"}%
+                    {record.readmissionRisk ? parseFloat(record.readmissionRisk).toFixed(2) : "N/A"}%
                     </div>
                     <motion.button 
                       whileHover={{ scale: 1.1 }}
