@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 // API base URL - replace with your actual API endpoint
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://readmit-backend.onrender.com/api';
 
 // Helper function to fetch with authorization
 const fetchWithAuth = async (url, options, getState) => {
